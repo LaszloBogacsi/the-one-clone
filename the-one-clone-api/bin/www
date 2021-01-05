@@ -1,0 +1,146 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('the-one-clone-api:server');
+var http = require('http');
+var socketIO = require('socket.io')
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+const io = socketIO(server, {
+    cors: {
+        origin: '*',
+    }
+});
+
+class Room {
+    constructor(param) {
+        this.io = param.io;
+        this.roomId = param.roomId;
+        this.playerName = param.playerName;
+        this.action = param.action;
+        this.socket = param.socket;
+        this.store = param.io.adapter;
+    }
+
+    async initialize() {
+
+        if (this.action === 'join') {
+            await this.socket.join(this.roomId)
+            this.store = this.store.rooms.get(this.roomId)
+            this.store.clients.push({id: this.socket.id, playerName: this.playerName, isReady: false})
+            this.socket.username = this.playerName;
+            console.info(`[JOINED] Client ${this.socket.id} joined room ${this.roomId}`);
+            // this.socket.emit('conn-ack', '[SUCCESS] Successfully joined');
+        }
+
+        if (this.action === 'create') {
+            console.log("create")
+            await this.socket.join(this.roomId)
+            this.store = this.store.rooms.get(this.roomId)
+            this.store.clients = [{id: this.socket.id, playerName: this.playerName, isReady: false}]
+            this.socket.username = this.playerName;
+            console.info(`[CREATE] Client ${this.socket.id} created and joined room ${this.roomId}`);
+            // this.socket.emit('conn-ack', '[SUCCESS] Successfully initialised');
+        }
+    }
+
+    // returns a list of connected playerNames
+    showPlayers() {
+        this.io.to(this.roomId).emit('show-players', { playersJoined: this.store.clients })
+    }
+
+
+}
+const sockio = io.of("/")
+sockio.on('connection', async (socket) => {
+        console.log("connected...")
+    const {roomId, playerName, action} = socket.handshake.query
+    console.log(`${roomId}, ${playerName}, ${action}`)
+    const room = new Room({io: sockio, roomId, playerName, action, socket})
+    await room.initialize()
+    room.showPlayers()
+    }
+);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+    var port = parseInt(val, 10);
+
+    if (isNaN(port)) {
+        // named pipe
+        return val;
+    }
+
+    if (port >= 0) {
+        // port number
+        return port;
+    }
+
+    return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+    if (error.syscall !== 'listen') {
+        throw error;
+    }
+
+    var bind = typeof port === 'string'
+        ? 'Pipe ' + port
+        : 'Port ' + port;
+
+    // handle specific listen errors with friendly messages
+    switch (error.code) {
+        case 'EACCES':
+            console.error(bind + ' requires elevated privileges');
+            process.exit(1);
+            break;
+        case 'EADDRINUSE':
+            console.error(bind + ' is already in use');
+            process.exit(1);
+            break;
+        default:
+            throw error;
+    }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+    var addr = server.address();
+    var bind = typeof addr === 'string'
+        ? 'pipe ' + addr
+        : 'port ' + addr.port;
+    debug('Listening on ' + bind);
+}
