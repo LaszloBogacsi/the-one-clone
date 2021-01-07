@@ -42,26 +42,50 @@ class Room {
         if (this.action === 'join') {
             await this.socket.join(this.roomId)
             this.store = this.store.rooms.get(this.roomId)
-            this.store.clients.push({id: this.socket.id, playerName: this.playerName, isReady: false})
+            this.store.clients.push({id: this.socket.id, playerName: this.playerName, isReady: false, isAdmin: false})
             this.socket.username = this.playerName;
             console.info(`[JOINED] Client ${this.socket.id} joined room ${this.roomId}`);
-            // this.socket.emit('conn-ack', '[SUCCESS] Successfully joined');
         }
 
         if (this.action === 'create') {
             console.log("create")
             await this.socket.join(this.roomId)
             this.store = this.store.rooms.get(this.roomId)
-            this.store.clients = [{id: this.socket.id, playerName: this.playerName, isReady: false}]
+            this.store.clients = [{id: this.socket.id, playerName: this.playerName, isReady: false, isAdmin: true}]
             this.socket.username = this.playerName;
             console.info(`[CREATE] Client ${this.socket.id} created and joined room ${this.roomId}`);
-            // this.socket.emit('conn-ack', '[SUCCESS] Successfully initialised');
         }
     }
 
     // returns a list of connected playerNames
     showPlayers() {
         this.io.to(this.roomId).emit('show-players', { playersJoined: this.store.clients })
+    }
+
+    isReady() {
+        this.socket.on('on-ready', () => {
+            this.store.clients.forEach(client => {
+                if (client.id === this.socket.id) {
+                    client.isReady = true
+                }
+                this.showPlayers()
+            })
+            const allPlayersReady = this.store.clients.every(client => client.isReady)
+            if (allPlayersReady) this.startGame()
+        })
+        this.socket.on('on-not-ready', () => {
+            this.store.clients.forEach(client => {
+                if (client.id === this.socket.id) {
+                    client.isReady = false
+                }
+                this.showPlayers()
+            })
+        })
+    }
+
+    startGame() {
+        console.info(`[CREATE] All players ready, Game starts in ${this.roomId}`);
+        this.io.to(this.roomId).emit('start-game', "starting game")
     }
 
 
@@ -74,6 +98,7 @@ sockio.on('connection', async (socket) => {
     const room = new Room({io: sockio, roomId, playerName, action, socket})
     await room.initialize()
     room.showPlayers()
+    room.isReady()
     }
 );
 
