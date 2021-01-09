@@ -42,7 +42,7 @@ class Room {
         if (this.action === 'join') {
             await this.socket.join(this.roomId)
             this.store = this.store.rooms.get(this.roomId)
-            this.store.clients.push({id: this.socket.id, playerName: this.playerName, isReady: false, isAdmin: false})
+            this.store.clients.push({id: this.socket.id, playerName: this.playerName, isReady: false, isAdmin: false, isGuessing: false})
             this.socket.username = this.playerName;
             console.info(`[JOINED] Client ${this.socket.id} joined room ${this.roomId}`);
         }
@@ -51,7 +51,7 @@ class Room {
             console.log("create")
             await this.socket.join(this.roomId)
             this.store = this.store.rooms.get(this.roomId)
-            this.store.clients = [{id: this.socket.id, playerName: this.playerName, isReady: false, isAdmin: true}]
+            this.store.clients = [{id: this.socket.id, playerName: this.playerName, isReady: false, isAdmin: true, isGuessing: false}]
             this.socket.username = this.playerName;
             console.info(`[CREATE] Client ${this.socket.id} created and joined room ${this.roomId}`);
         }
@@ -83,13 +83,122 @@ class Room {
         })
     }
 
-    startGame() {
-        console.info(`[CREATE] All players ready, Game starts in ${this.roomId}`);
-        this.io.to(this.roomId).emit('start-game', "starting game")
+    getSecretWord() {
+        const secretWords = ["secret", "words", "guessing"];
+        return secretWords[Math.floor(Math.random()*secretWords.length)]
     }
 
+    startGame() {
+        this.store.gameState = {
+            rounds: [this.newRound()],
+            currentRound: 0,
+            maxRounds: 3,
+            hintTimeout: 10,
+            guessTimeout: 10,
+            maxTurn: 3 // 13 turns
+        }
+        const {clients} = this.store;
+        clients[0].isGuessing = true
+        this.showPlayers()
+        this.io.to(this.roomId).emit('start-game', {gameState: this.store.gameState})
+        console.info(`[CREATE] All players ready, Game starts in ${this.roomId} room`);
+    }
 
+    newRound() {
+        return {
+            turns: [
+                this.newTurn()
+            ],
+            currentTurn: 0,
+            points: 0,
+        };
+    }
+
+    showGameState() {
+        this.io.to(this.roomId).emit('show-game-state', {gameState: this.store.gameState})
+    }
+
+    registerGameHandlers() {
+        this.socket.on('on-player-hint-submit', (data) => {
+            const {gameState} = this.store;
+            const {turns, currentTurn} = gameState.rounds[gameState.currentRound];
+            const {hints} = turns[currentTurn];
+            hints.push({hint: data.hint, player: this.store.clients.find(c => c.id === this.socket.id)})
+            const hintersSoFar = hints.map(hint => hint.player);
+            const allHintersHinted = this.store.clients.filter(client => !client.isGuessing).every(client => hintersSoFar.includes(client))
+            console.info(`[INFO] Submitting hint of client ${this.socket.id}`);
+            if (allHintersHinted) this.revealHints(gameState)
+            this.showGameState()
+        })
+        this.socket.on('on-player-guess-submit', (data) => {
+            const {gameState} = this.store;
+            const {turns, currentTurn} = gameState.rounds[gameState.currentRound];
+            const turn = turns[currentTurn];
+            turn.guess = data.guess;
+            console.info(`[INFO] Submitting guess, client ${this.socket.id}`);
+            this.io.to(this.roomId).emit('show-turn-result', {result: data.guess.toUpperCase() === turn.secretWord.toUpperCase() ? 'success' : 'failure'})
+
+            this.nextTurn()
+            this.showGameState()
+        })
+    }
+
+    newTurn() {
+        return {
+            secretWord: this.getSecretWord(),
+            hints: [],
+            reveal: false,
+            guess: ""
+        }
+    }
+
+    nextTurn() {
+        const {gameState, clients} = this.store;
+        // add new turn
+        gameState.rounds[gameState.currentRound].turns.push(this.newTurn());
+        const round = gameState.rounds[gameState.currentRound];
+        clients[round.currentTurn % clients.length].isGuessing = false
+        // increment current turn
+        round.currentTurn += 1
+        // pick new guesser
+        clients[round.currentTurn % clients.length].isGuessing = true
+        console.info(`[INFO] Next turn in ${this.roomId} for Round:${gameState.currentRound} new Turn:${round.currentTurn} of ${gameState.maxTurn}`);
+        const isRoundOver = round.currentTurn > gameState.maxTurn
+        if (isRoundOver) this.nextRound()
+        this.showPlayers()
+    }
+
+    nextRound() {
+        const {gameState, clients} = this.store;
+        // add new round
+        gameState.rounds.push(this.newRound());
+        // increment current round
+        gameState.currentRound += 1;
+        // pick first guesser
+        clients.forEach(client => client.isGuessing = false)
+        clients[0].isGuessing = true;
+        console.info(`[INFO] Next Round in ${this.roomId} Round:${gameState.currentRound} of ${gameState.maxRounds}`);
+        const isGameOver = gameState.currentRound > gameState.maxRounds;
+        if (isGameOver) this.gameOver()
+        this.showGameState();
+    }
+
+    gameOver() {
+        // TODO(GAme over) set inLobby:true and all isReady to false
+        console.log("Game Over")
+        this.io.to(this.roomId).emit('game-over', "game Over")
+
+
+    }
+
+    revealHints(gameState) {
+        const {turns, currentTurn} = gameState.rounds[gameState.currentRound];
+        const turn = turns[currentTurn];
+        console.info(`[INFO] All hints submitted revealing hints in ${this.roomId} for Round:${gameState.currentRound} Turn:${currentTurn}`);
+        turn.reveal = true
+    }
 }
+
 const sockio = io.of("/")
 sockio.on('connection', async (socket) => {
         console.log("connected...")
@@ -99,6 +208,7 @@ sockio.on('connection', async (socket) => {
     await room.initialize()
     room.showPlayers()
     room.isReady()
+    room.registerGameHandlers()
     }
 );
 
