@@ -54,6 +54,7 @@ interface GameState {
     hintTimeout: number
     guessTimeout: number
     inLobby: boolean
+    maxTurn: number
 }
 
 function Home() {
@@ -67,9 +68,11 @@ function Home() {
     const [hint, setHint] = useState<string>();
     const [guess, setGuess] = useState<string>();
     const [turnResult, setTurnResult] = useState<string>();
+    const [hintCountdown, setHintCountdown] = useState<number>();
+    const [guessCountdown, setGuessCountdown] = useState<number>();
 
     useEffect(() => {
-        function toPlayers(playersJoined: any[]) {
+        function toPlayers(playersJoined: any[]= []) {
             const toPlayer = (player: any) => {
                 return {
                     id: player.id,
@@ -111,6 +114,16 @@ function Home() {
             socket.on('show-turn-result', (data: {result: string}) => {
                 console.log(data)
                 setTurnResult(data.result)
+            })
+            socket.on('hint-countdown', (data: {countdown: number}) => {
+                console.log(data)
+                setHintCountdown(data.countdown)
+                setGuessCountdown(undefined)
+            })
+            socket.on('guess-countdown', (data: {countdown: number}) => {
+                console.log(data)
+                setGuessCountdown(data.countdown)
+                setHintCountdown(undefined)
             })
         }
         if (players) {
@@ -167,9 +180,12 @@ function Home() {
         setHint("")
     }
 
-    const onGuess = () => {
-        socket!.emit('on-player-guess-submit', {guess})
+    const onGuess = (event:any, skip=false) => {
+        socket!.emit('on-player-guess-submit', {guess, skip})
         setGuess("")
+    }
+    const onSkip = (event: any) => {
+        onGuess(event, true)
     }
 
     return (
@@ -199,6 +215,18 @@ function Home() {
             }
             { gameState && !gameState.inLobby &&
                 <div>
+                    <div>
+                        Rounds: {gameState.maxTurn}/{gameState.rounds[gameState.currentRound].currentTurn}
+                        Points:{gameState.rounds[gameState.currentRound].points}
+                    </div>
+                    {hintCountdown &&
+                    <div>
+                        HintCountdown: {hintCountdown}
+                    </div>}
+                    {guessCountdown &&
+                    <div>
+                        GuessCountdown: {guessCountdown}
+                    </div>}
                     {me && gameState && me.isGuessing &&
                     <p>I'm guessing</p>
                     }
@@ -213,8 +241,12 @@ function Home() {
                     <div>
                         <p>I'm hinting here is the secret
                             word: {gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].secretWord}</p>
-                        <input value={hint} onChange={onInputChange} name={"hint"} type="text"/>
-                        <button onClick={onHint}>Hint!</button>
+                        { !gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].reveal &&
+                            <div>
+                                <input value={hint} onChange={onInputChange} name={"hint"} type="text"/>
+                                <button onClick={onHint}>Hint!</button>
+                            </div>
+                        }
                         {turnResult &&
                         <div>
                             {players && players!.find(pl => pl.isGuessing)?.name} guessed {turnResult === 'success' ? 'CORRRECTLY' : 'INCORRECTLY'}
@@ -231,9 +263,10 @@ function Home() {
                         }
                         <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>
                         <button onClick={onGuess}>Guess!</button>
+                        <button onClick={onSkip}>Skip</button>
                         {turnResult &&
                         <div>
-                            You guessed {turnResult === 'success' ? 'CORRRECTLY' : 'INCORRECTLY'}
+                            You guessed {turnResult === 'success' ? 'CORRECTLY' : 'INCORRECTLY'}
                         </div>
                         }
                     </div>
