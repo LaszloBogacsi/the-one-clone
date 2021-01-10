@@ -72,7 +72,7 @@ function Home() {
     const [guessCountdown, setGuessCountdown] = useState<number>();
 
     useEffect(() => {
-        function toPlayers(playersJoined: any[]= []) {
+        function toPlayers(playersJoined: any[]) {
             const toPlayer = (player: any) => {
                 return {
                     id: player.id,
@@ -96,8 +96,10 @@ function Home() {
             */
             socket.on('show-players', (data: { playersJoined: any[] }) => {
                 console.log(data)
-                setPlayers(toPlayers(data.playersJoined))
-                setMe(data.playersJoined.find(player => player.id === socket.id))
+                const playersJoined = data.playersJoined || []
+                console.log(data.playersJoined)
+                setPlayers(toPlayers(playersJoined))
+                setMe(playersJoined.find(player => player.id === socket.id))
             })
             socket.on('start-game', (data: {gameState: GameState}) => {
                 console.log(data)
