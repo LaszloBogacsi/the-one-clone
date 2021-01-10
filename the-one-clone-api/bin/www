@@ -88,18 +88,26 @@ class Room {
         return secretWords[Math.floor(Math.random()*secretWords.length)]
     }
 
-    startGame() {
+    resetGameState() {
         this.store.gameState = {
             rounds: [this.newRound()],
             currentRound: 0,
-            maxRounds: 3,
-            hintTimeout: 10,
-            guessTimeout: 10,
-            maxTurn: 3 // 13 turns
+            maxRounds: 1,
+            hintTimeout: 2_000,
+            guessTimeout: 2_000,
+            maxTurn: 1, // 13 turns
+            inLobby: true
         }
-        const {clients} = this.store;
-        clients[0].isGuessing = true
+    }
+
+    startGame() {
+        this.resetGameState()
+        const {clients, gameState} = this.store;
+        gameState.inLobby = false;
+        clients.forEach(client => client.isGuessing = false)
+        clients[0].isGuessing = true;
         this.showPlayers()
+        this.startHintTimeout()
         this.io.to(this.roomId).emit('start-game', {gameState: this.store.gameState})
         console.info(`[CREATE] All players ready, Game starts in ${this.roomId} room`);
     }
@@ -110,7 +118,7 @@ class Room {
                 this.newTurn()
             ],
             currentTurn: 0,
-            points: 0,
+            points: 0
         };
     }
 
@@ -127,7 +135,11 @@ class Room {
             const hintersSoFar = hints.map(hint => hint.player);
             const allHintersHinted = this.store.clients.filter(client => !client.isGuessing).every(client => hintersSoFar.includes(client))
             console.info(`[INFO] Submitting hint of client ${this.socket.id}`);
-            if (allHintersHinted) this.revealHints(gameState)
+            if (allHintersHinted) {
+                clearTimeout(this.store.hintTimeout)
+                this.revealHints(gameState)
+                this.startGuessTimeout()
+            }
             this.showGameState()
         })
         this.socket.on('on-player-guess-submit', (data) => {
@@ -137,7 +149,7 @@ class Room {
             turn.guess = data.guess;
             console.info(`[INFO] Submitting guess, client ${this.socket.id}`);
             this.io.to(this.roomId).emit('show-turn-result', {result: data.guess.toUpperCase() === turn.secretWord.toUpperCase() ? 'success' : 'failure'})
-
+            clearTimeout(this.store.guessTimeout)
             this.nextTurn()
             this.showGameState()
         })
@@ -154,41 +166,49 @@ class Room {
 
     nextTurn() {
         const {gameState, clients} = this.store;
-        // add new turn
-        gameState.rounds[gameState.currentRound].turns.push(this.newTurn());
         const round = gameState.rounds[gameState.currentRound];
-        clients[round.currentTurn % clients.length].isGuessing = false
-        // increment current turn
-        round.currentTurn += 1
-        // pick new guesser
-        clients[round.currentTurn % clients.length].isGuessing = true
-        console.info(`[INFO] Next turn in ${this.roomId} for Round:${gameState.currentRound} new Turn:${round.currentTurn} of ${gameState.maxTurn}`);
-        const isRoundOver = round.currentTurn > gameState.maxTurn
+        const isRoundOver = round.currentTurn + 1 > gameState.maxTurn
         if (isRoundOver) this.nextRound()
+        else {
+            // add new turn
+            round.turns.push(this.newTurn());
+            clients[round.currentTurn % clients.length].isGuessing = false
+            // increment current turn
+            round.currentTurn += 1
+            // pick new guesser
+            clients[round.currentTurn % clients.length].isGuessing = true
+            console.info(`[INFO] Next turn in ${this.roomId} for Round:${gameState.currentRound} new Turn:${round.currentTurn} of ${gameState.maxTurn}`);
+            this.startHintTimeout()
+        }
         this.showPlayers()
     }
 
     nextRound() {
         const {gameState, clients} = this.store;
-        // add new round
-        gameState.rounds.push(this.newRound());
-        // increment current round
-        gameState.currentRound += 1;
-        // pick first guesser
-        clients.forEach(client => client.isGuessing = false)
-        clients[0].isGuessing = true;
-        console.info(`[INFO] Next Round in ${this.roomId} Round:${gameState.currentRound} of ${gameState.maxRounds}`);
-        const isGameOver = gameState.currentRound > gameState.maxRounds;
+        const isGameOver = gameState.currentRound + 1 > gameState.maxRounds;
         if (isGameOver) this.gameOver()
+        else {
+            // add new round
+            gameState.rounds.push(this.newRound());
+            // increment current round
+            gameState.currentRound += 1;
+            // pick first guesser
+            clients.forEach(client => client.isGuessing = false)
+            clients[0].isGuessing = true;
+            console.info(`[INFO] Next Round in ${this.roomId} Round:${gameState.currentRound} of ${gameState.maxRounds}`);
+            this.startHintTimeout()
+        }
         this.showGameState();
     }
 
     gameOver() {
-        // TODO(GAme over) set inLobby:true and all isReady to false
         console.log("Game Over")
         this.io.to(this.roomId).emit('game-over', "game Over")
-
-
+        const {gameState, clients} = this.store;
+        clients.forEach(client => client.isReady = false)
+        gameState.inLobby = true;
+        clearTimeout(this.store.guessTimeout)
+        clearTimeout(this.store.hintTimeout)
     }
 
     revealHints(gameState) {
@@ -196,6 +216,30 @@ class Room {
         const turn = turns[currentTurn];
         console.info(`[INFO] All hints submitted revealing hints in ${this.roomId} for Round:${gameState.currentRound} Turn:${currentTurn}`);
         turn.reveal = true
+    }
+
+    onDisconnect() {
+        this.socket.on("disconnect", () => {
+            // remove from clients
+            console.info(`[DISCONNECT] Client ${this.socket.id} Disconnected from ${this.roomId}`);
+            this.store.clients = this.store.clients.filter(client => client.id !== this.socket.id)
+            this.showPlayers()
+        })
+    }
+
+    startHintTimeout() {
+        this.store.hintTimeout = setTimeout(() => {
+            this.revealHints(this.store.gameState)
+            this.startGuessTimeout()
+            this.showGameState() // or just emit the reveal change
+        }, this.store.gameState.hintTimeout)
+    }
+
+    startGuessTimeout() {
+        this.store.guessTimeout = setTimeout(() => {
+            this.nextTurn()
+            this.showGameState() // or just emit the reveal change
+        }, this.store.gameState.guessTimeout)
     }
 }
 
@@ -208,7 +252,10 @@ sockio.on('connection', async (socket) => {
     await room.initialize()
     room.showPlayers()
     room.isReady()
+    room.resetGameState()
+    room.showGameState()
     room.registerGameHandlers()
+    room.onDisconnect()
     }
 );
 
