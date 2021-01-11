@@ -20,6 +20,9 @@ function App() {
     );
 }
 
+export default App;
+
+
 interface Player {
     id: string
     name: string
@@ -32,6 +35,7 @@ interface Player {
 interface Hint {
     player: Player
     hint: string
+    duplicate: boolean
 }
 
 interface Turn {
@@ -66,14 +70,15 @@ function Home() {
     const [me, setMe] = useState<Player>();
     const [gameState, setGameState] = useState<GameState>();
     const [hint, setHint] = useState<string>();
+    const [hintSecond, setHintSecond] = useState<string>();
     const [guess, setGuess] = useState<string>();
     const [turnResult, setTurnResult] = useState<string>();
     const [hintCountdown, setHintCountdown] = useState<number>();
     const [guessCountdown, setGuessCountdown] = useState<number>();
 
     useEffect(() => {
-        function toPlayers(playersJoined: any[]) {
-            const toPlayer = (player: any) => {
+        function toPlayers(playersJoined: any[]): Player[] {
+            const toPlayer = (player: any): Player => {
                 return {
                     id: player.id,
                     name: player.playerName,
@@ -81,7 +86,7 @@ function Home() {
                     isMe: player.id === socket!.id,
                     isAdmin: player.isAdmin,
                     isGuessing: player.isGuessing
-                }
+                } as Player
             }
             return playersJoined.map(player => toPlayer(player));
         }
@@ -91,7 +96,6 @@ function Home() {
                 console.log(socket)
             })
             /* EVENTS to handle
-                  - disconnect
                   - connect_error
             */
             socket.on('show-players', (data: { playersJoined: any[] }) => {
@@ -101,31 +105,31 @@ function Home() {
                 setPlayers(toPlayers(playersJoined))
                 setMe(playersJoined.find(player => player.id === socket.id))
             })
-            socket.on('start-game', (data: {gameState: GameState}) => {
+            socket.on('start-game', (data: { gameState: GameState }) => {
                 console.log(data)
                 setGameState(data.gameState)
             })
-            socket.on('show-game-state', (data: {gameState: GameState}) => {
+            socket.on('show-game-state', (data: { gameState: GameState }) => {
                 console.log(data)
                 setGameState(data.gameState)
             })
-            socket.on('reveal-hints', (data: {gameState: GameState}) => {
+            socket.on('reveal-hints', (data: { gameState: GameState }) => {
                 console.log(data)
                 setGameState(data.gameState)
             })
-            socket.on('show-turn-result', (data: {result: string}) => {
+            socket.on('show-turn-result', (data: { result: string }) => {
                 console.log(data)
                 setTurnResult(data.result)
             })
-            socket.on('hint-countdown', (data: {countdown: number}) => {
+            socket.on('hint-countdown', (data: { countdown: number }) => {
                 console.log(data)
                 setHintCountdown(data.countdown)
-                setGuessCountdown(undefined)
+                if (guessCountdown !== undefined) setGuessCountdown(undefined)
             })
-            socket.on('guess-countdown', (data: {countdown: number}) => {
+            socket.on('guess-countdown', (data: { countdown: number }) => {
                 console.log(data)
                 setGuessCountdown(data.countdown)
-                setHintCountdown(undefined)
+                if (hintCountdown !== undefined) setHintCountdown(undefined)
             })
         }
         if (players) {
@@ -163,6 +167,10 @@ function Home() {
                 setHint(event.target.value || "");
                 break;
             }
+            case "hintSecond": {
+                setHintSecond(event.target.value || "");
+                break;
+            }
             case "guess": {
                 setGuess(event.target.value || "");
                 break;
@@ -181,8 +189,12 @@ function Home() {
         socket!.emit('on-player-hint-submit', {hint})
         setHint("")
     }
+    const onHintSecond = () => {
+        socket!.emit('on-player-hint-submit', {hint: hintSecond})
+        setHintSecond("")
+    }
 
-    const onGuess = (event:any, skip=false) => {
+    const onGuess = (event: any, skip = false) => {
         socket!.emit('on-player-guess-submit', {guess, skip})
         setGuess("")
     }
@@ -192,7 +204,8 @@ function Home() {
 
     return (
         <div>
-            <input value={playerName} onChange={onInputChange} name={"playerName"} type="text" placeholder={"Player Name"}/>
+            <input value={playerName} onChange={onInputChange} name={"playerName"} type="text"
+                   placeholder={"Player Name"}/>
             {/*{roomId ?*/}
             <button onClick={onJoinRoom}>Join Room</button>
             {/*:*/}
@@ -201,82 +214,89 @@ function Home() {
             <div>
                 Me: {JSON.stringify(me)}
             </div>
-            { gameState &&
+            {gameState &&
+            <div>
                 <div>
-                    <div>
-                        {players?.map(player => <li key={player.id}>id: {player.id},
-                            name: {player.name} ready?: {player.isReady.toString()},
-                            guessing?: {player.isGuessing.toString()},
-                            hinted?: {gameState ? gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].hints.some(h => h.player.id === player.id).toString() : "N/A"}</li>)}
-                    </div>
-                    <div>
-                        {me && <button onClick={onReady}>{me.isReady ? 'Not Ready' : 'I\'m Ready'}</button>}
-                    </div>
+                    {players?.map(player => <li key={player.id}>id: {player.id},
+                        name: {player.name} ready?: {player.isReady.toString()},
+                        guessing?: {player.isGuessing.toString()},
+                        hinted?: {gameState ? gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].hints.some(h => h.player.id === player.id).toString() : "N/A"}</li>)}
                 </div>
+                <div>
+                    {me && <button onClick={onReady}>{me.isReady ? 'Not Ready' : 'I\'m Ready'}</button>}
+                </div>
+            </div>
 
             }
-            { gameState && !gameState.inLobby &&
+            {gameState && !gameState.inLobby &&
+            <div>
                 <div>
+                    Rounds: {gameState.maxTurn}/{gameState.rounds[gameState.currentRound].currentTurn}
+                    Points:{gameState.rounds[gameState.currentRound].points}
+                </div>
+                {hintCountdown &&
+                <div>
+                    HintCountdown: {hintCountdown}
+                </div>}
+                {guessCountdown &&
+                <div>
+                    GuessCountdown: {guessCountdown}
+                </div>}
+                {me && gameState && me.isGuessing &&
+                <p>I'm guessing</p>
+                }
+                {gameState &&
+                <div>
+                    <p>Current Round: {gameState.currentRound}</p>
+                    <p>Current Turn: {gameState.rounds[gameState.currentRound].currentTurn}</p>
+                </div>
+                }
+
+                {me && gameState && !me.isGuessing &&
+                <div>
+                    <p>I'm hinting here is the secret
+                        word: {gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].secretWord}</p>
+                    {!gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].reveal &&
+
                     <div>
-                        Rounds: {gameState.maxTurn}/{gameState.rounds[gameState.currentRound].currentTurn}
-                        Points:{gameState.rounds[gameState.currentRound].points}
-                    </div>
-                    {hintCountdown &&
-                    <div>
-                        HintCountdown: {hintCountdown}
-                    </div>}
-                    {guessCountdown &&
-                    <div>
-                        GuessCountdown: {guessCountdown}
-                    </div>}
-                    {me && gameState && me.isGuessing &&
-                    <p>I'm guessing</p>
-                    }
-                    {gameState &&
-                    <div>
-                        <p>Current Round: {gameState.currentRound}</p>
-                        <p>Current Turn: {gameState.rounds[gameState.currentRound].currentTurn}</p>
+                        <input value={hint} onChange={onInputChange} name={"hint"} type="text"/>
+                        <button onClick={onHint}>Hint!</button>
+                        {players?.length === 3 &&
+                            <div>
+                                <input value={hintSecond} onChange={onInputChange} name={"hintSecond"} type="text"/>
+                                <button onClick={onHintSecond}>Hint!</button>
+                            </div>
+
+                        }
                     </div>
                     }
 
-                    {me && gameState && !me.isGuessing &&
+                    {turnResult &&
                     <div>
-                        <p>I'm hinting here is the secret
-                            word: {gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].secretWord}</p>
-                        { !gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].reveal &&
-                            <div>
-                                <input value={hint} onChange={onInputChange} name={"hint"} type="text"/>
-                                <button onClick={onHint}>Hint!</button>
-                            </div>
-                        }
-                        {turnResult &&
-                        <div>
-                            {players && players!.find(pl => pl.isGuessing)?.name} guessed {turnResult === 'success' ? 'CORRRECTLY' : 'INCORRECTLY'}
-                        </div>
-                        }
-                    </div>
-                    }
-                    {me && me.isGuessing && gameState && gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].reveal &&
-                    <div>
-                        {gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].hints.map(hint =>
-                            <li key={hint.player.id}>{hint.hint}</li>)}
-                        {gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].hints.length === 0 &&
-                        <div>No Hint Submitted</div>
-                        }
-                        <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>
-                        <button onClick={onGuess}>Guess!</button>
-                        <button onClick={onSkip}>Skip</button>
-                        {turnResult &&
-                        <div>
-                            You guessed {turnResult === 'success' ? 'CORRECTLY' : 'INCORRECTLY'}
-                        </div>
-                        }
+                        {players && players!.find(pl => pl.isGuessing)?.name} guessed {turnResult === 'success' ? 'CORRRECTLY' : 'INCORRECTLY'}
                     </div>
                     }
                 </div>
+                }
+                {me && me.isGuessing && gameState && gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].reveal &&
+                <div>
+                    {gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].hints.map(hint =>
+                        <li key={hint.player.id}>{hint.duplicate ? "duplicate hint" : hint.hint}</li>)}
+                    {gameState.rounds[gameState.currentRound].turns[gameState.rounds[gameState.currentRound].currentTurn].hints.length === 0 &&
+                    <div>No Hint Submitted</div>
+                    }
+                    <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>
+                    <button onClick={onGuess}>Guess!</button>
+                    <button onClick={onSkip}>Skip</button>
+                    {turnResult &&
+                    <div>
+                        You guessed {turnResult === 'success' ? 'CORRECTLY' : 'INCORRECTLY'}
+                    </div>
+                    }
+                </div>
+                }
+            </div>
             }
         </div>
     )
 }
-
-export default App;
