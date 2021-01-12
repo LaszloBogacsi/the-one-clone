@@ -4,6 +4,12 @@ const {describe, it} = require("mocha");
 describe('Room', function() {
     const room = new Room({io: {}, roomId: "", playerName: "", action: "", socket: {}})
     describe('#markDuplicates()', function() {
+        it('should should handle empty array', function() {
+            const hints = []
+            const expectedHints = []
+            room.markDuplicates(hints)
+            assert.deepStrictEqual(hints, expectedHints);
+        });
         it('should not mark items as duplicate when only one item present', function() {
             const hints = [
                 {hint: "a", duplicate: false},

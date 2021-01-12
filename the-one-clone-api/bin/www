@@ -31,21 +31,22 @@ const io = socketIO(server, {
 /*
     refactor to reducer pattern
     add more events for game play (turn-start, hint-start, hint-end, guess-end, result-start, result-end, game-over-start, game-over-end)
-    testing
- */
+
+*/
 
 const sockio = io.of("/")
 sockio.on('connection', async (socket) => {
         console.log("connected...")
     const {roomId, playerName, action} = socket.handshake.query
     console.log(`${roomId}, ${playerName}, ${action}`)
-    const room = new Room({io: sockio, roomId, playerName, action, socket})
+    const room = new Room2({io: sockio, roomId, playerName, action, socket})
     await room.initialize()
-    room.showPlayers()
-    room.isReady()
-    room.showGameState()
-    room.registerGameHandlers()
-    room.onDisconnect()
+    // room.showPlayers()
+    room.playerJoinedLobby()
+    room.isReady() // this just register a handler
+    // room.showGameState()
+    // room.registerGameHandlers()
+    // room.onDisconnect()
     }
 );
 
