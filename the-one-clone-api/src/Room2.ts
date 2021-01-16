@@ -11,7 +11,7 @@ interface Player {
 
 class Turn {
     public secretWord: string
-    public hints = []
+    public hints: string[] = []
     public reveal = false
     public guess = ""
 
@@ -22,7 +22,6 @@ class Turn {
 
 class Round {
     public turns: Turn[] = []
-    public currentTurn = 0
     public points = 0
 
     constructor() {
@@ -30,6 +29,9 @@ class Round {
 
     addTurn(turn: Turn) {
         this.turns.push(turn)
+    }
+    currentTurn(): number {
+        return this.turns.length - 1;
     }
 }
 
@@ -46,6 +48,7 @@ class GameState {
     public gameConfig: GameConfig;
     public rounds: Round[] = []
     public inLobby: boolean
+
 
     constructor(gameConfig: GameConfig) {
         this.gameConfig = gameConfig
@@ -159,9 +162,6 @@ class Room2 {
 
     ####  GAME  ####
 
-    - game-start
-    - round-announce (round: 1)
-    - roles announce (Guesser: Player1)
     - hint-start
     .. timeout - hint
     - hint-status
@@ -209,14 +209,12 @@ class Room2 {
         // start new round and announce roles
         setTimeout(this._startNewRound.bind(this), 2000)
 
-
         const announceRoles = () => {
             clients.forEach((client: Player) => client.isGuessing = false)
             clients[0].isGuessing = true;
             const guesser: Player = clients[0];
             this._emitRoleGeneral(guesser)
             console.info(`[Roles] announcing guesser is ${guesser.playerName}, in ${this.roomId} room`);
-
         }
 
         setTimeout(announceRoles, 4000)
@@ -237,13 +235,60 @@ class Room2 {
         this.io.to(this.roomId).emit('start-turn', {turn})
     }
 
+    _emitHintEnd() {
+        this.io.to(this.roomId).emit('end-hint', {message: "hint end"})
+    }
+
+    _startCountDown(delay: number) {
+        this.store.countDownTimeout = setTimeout(() => {
+            this._hintEnd()
+            this._revealHints()
+            this._startNewGuess()
+        }, delay * 1000)
+
+        let countdown = delay;
+        this.io.to(this.roomId).emit('hint-countdown', {countdown})
+        this.store.countDownInterval = setInterval(() => {
+            countdown -= 1
+            this.io.to(this.roomId).emit('hint-countdown', {countdown})
+        }, 1000)
+    }
+
+    _hintEnd() {
+        clearInterval(this.store.countDownInterval)
+        this._emitHintEnd()
+    }
+
     _startNewTurn() {
         const {gameState} = this.store;
-        const {rounds, currentRound} = gameState;
+        const {rounds, currentRound, gameConfig} = gameState;
         const turn = new Turn(this._getSecretWord());
         rounds[currentRound.call(gameState)].addTurn(turn)
         this._emitNewTurn(turn)
         console.info(`[NEWTURN] New Turn starting, in ${this.roomId} room`);
+        this._startCountDown(gameConfig.hintTimeout / 1000)
+    }
+
+    _revealHints() {
+        const {gameState} = this.store;
+        const {rounds, currentRound} = gameState;
+        const round: Round = rounds[currentRound.call(gameState)]
+        const turn: Turn = round.turns[round.currentTurn()]
+        this._emitHints(turn.hints)
+        // check for duplicates bit
+        turn.reveal = true
+        this._emitReveal(turn.reveal)
+    }
+
+    _emitHints(hints: string[]) {
+        this.io.to(this.roomId).emit('turn-hints', {hints})
+    }
+
+    _emitReveal(reveal: boolean) {
+        this.io.to(this.roomId).emit('turn-hints-reveal', {reveal})
+    }
+
+    _startNewGuess() {
 
     }
 
