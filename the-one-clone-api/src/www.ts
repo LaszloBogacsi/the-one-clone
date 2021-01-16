@@ -3,12 +3,12 @@
 /**
  * Module dependencies.
  */
-
-var app = require('../app');
+import {app} from './app'
+import {Socket} from "socket.io";
 var debug = require('debug')('the-one-clone-api:server');
 var http = require('http');
 var socketIO = require('socket.io')
-const Room = require("./Room");
+const Room2 = require("./Room2");
 
 /**
  * Get port from environment and store in Express.
@@ -35,8 +35,9 @@ const io = socketIO(server, {
 */
 
 const sockio = io.of("/")
-sockio.on('connection', async (socket) => {
+sockio.on('connection', async (socket: Socket) => {
         console.log("connected...")
+    // @ts-ignore
     const {roomId, playerName, action} = socket.handshake.query
     console.log(`${roomId}, ${playerName}, ${action}`)
     const room = new Room2({io: sockio, roomId, playerName, action, socket})
@@ -44,7 +45,7 @@ sockio.on('connection', async (socket) => {
     // room.showPlayers()
     room.playerJoinedLobby()
     room.isReady() // this just register a handler
-    // room.showGameState()
+    room.showGameState()
     // room.registerGameHandlers()
     // room.onDisconnect()
     }
@@ -62,7 +63,7 @@ server.on('listening', onListening);
  * Normalize a port into a number, string, or false.
  */
 
-function normalizePort(val) {
+function normalizePort(val: any) {
     var port = parseInt(val, 10);
 
     if (isNaN(port)) {
@@ -82,7 +83,7 @@ function normalizePort(val) {
  * Event listener for HTTP server "error" event.
  */
 
-function onError(error) {
+function onError(error: any) {
     if (error.syscall !== 'listen') {
         throw error;
     }
