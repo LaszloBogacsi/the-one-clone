@@ -10,29 +10,35 @@ interface Player {
 }
 
 class Turn {
-    public secretWord: string
-    public hints: string[] = []
+    public readonly secretWord: string
+    public hints: Hint[] = []
     public reveal = false
     public guess = ""
+    public result: string | undefined;
 
     constructor(chosenWord: string) {
         this.secretWord = chosenWord
     }
 }
 
+class Hint {
+    constructor(public readonly player: Player, public readonly hint: string, public duplicate: boolean) {
+    }
+}
+
 class Round {
     public turns: Turn[] = []
     public points = 0
+    public currentTurn = -1
 
     constructor() {
     }
 
     addTurn(turn: Turn) {
-        this.turns.push(turn)
+        this.turns.push(turn);
+        this.currentTurn += 1;
     }
-    currentTurn(): number {
-        return this.turns.length - 1;
-    }
+
 }
 
 class GameConfig {
@@ -48,20 +54,19 @@ class GameState {
     public gameConfig: GameConfig;
     public rounds: Round[] = []
     public inLobby: boolean
-
+    public currentRound: number
 
     constructor(gameConfig: GameConfig) {
         this.gameConfig = gameConfig
         this.inLobby = true
+        this.currentRound = -1
     }
 
     addRound(round: Round): void {
         this.rounds.push(round)
+        this.currentRound += 1
     }
 
-    currentRound(): number {
-        return this.rounds.length - 1;
-    }
 }
 
 class Room2 {
@@ -122,6 +127,58 @@ class Room2 {
 
     isReady() {
         this.socket.on('on-ready', this._onReadyHandler.bind(this))
+        this.socket.on('on-player-hint-submit', (data: {hint: string}) => {
+            const {gameState} = this.store;
+            const {turns, currentTurn} = gameState.rounds[gameState.currentRound];
+            const {hints} = turns[currentTurn];
+            hints.push({
+                hint: data.hint,
+                player: this.store.clients.find((c: Player) => c.id === this.socket.id).id,
+                duplicate: false
+            })
+            const hintersSoFar = hints.map((hint: Hint) => hint.player);
+            const allHintersHinted = this.store.clients.length === 3 ? hintersSoFar.length === 4 : this.store.clients.filter((client: Player) => !client.isGuessing).every((client: Player) => hintersSoFar.includes(client.id))
+            console.info(`[INFO] Submitting hint of client ${this.socket.id}`);
+            if (allHintersHinted) {
+                this._clearTimeouts()
+                this._hintToGuessTransition()
+            }
+        })
+        this.socket.on('on-player-guess-submit', (data: {guess: string}) => {
+            const {gameState}: { gameState: GameState } = this.store;
+            const {rounds, currentRound} = gameState;
+            const round: Round = rounds[currentRound]
+            const turn: Turn = round.turns[round.currentTurn]
+            turn.guess = data.guess;
+            console.info(`[INFO] Submitting guess, client ${this.socket.id}`);
+
+            this._clearTimeouts()
+            this._guessToNewTurnTransition()
+        })
+    }
+
+    onDisconnect() {
+        this.socket.on("disconnect", () => {
+            // remove from clients
+            console.info(`[DISCONNECT] Client ${this.socket.id} Disconnected from ${this.roomId}`);
+            const disconnectedPlayer: Player = this.store.clients.find((client: Player) => client.id === this.socket.id)
+            this.store.clients = this.store.clients.filter((client: Player) => client.id !== this.socket.id)
+            // when all players disconnected
+            if (!this.store.clients.length) {
+                console.info(`[GAME OVER] All players disconnected from ${this.roomId}`);
+                // this.gameOver()
+            }
+            this._emitPlayerDisconnected(disconnectedPlayer)
+        })
+    }
+
+    showGameState() {
+        this.io.to(this.roomId).emit('show-game-state', {gameState: this.store.gameState})
+    }
+
+    _clearTimeouts() {
+        clearTimeout(this.store.countDownTimeout)
+        clearInterval(this.store.countDownInterval)
     }
 
     _onReadyHandler(data: { ready: boolean }) {
@@ -137,10 +194,6 @@ class Room2 {
 
     _emitOnReadyChange(client: Player) {
         this.io.to(this.roomId).emit('player-ready-change', {id: client.id, isReady: client.isReady})
-    }
-
-    showGameState() {
-        this.io.to(this.roomId).emit('show-game-state', {gameState: this.store.gameState})
     }
 
     _getSecretWord() {
@@ -189,8 +242,8 @@ class Room2 {
         this.io.to(this.roomId).emit('start-game', {inLobby})
     }
 
-    _emitRound(round: Round) {
-        this.io.to(this.roomId).emit('start-round', {round})
+    _emitRound(round: Round, currentRound: number) {
+        this.io.to(this.roomId).emit('start-round', {round, currentRound})
     }
 
     _emitRoleGeneral(guesser: Player) {
@@ -199,59 +252,84 @@ class Room2 {
 
     startGame() {
         this.resetGameState()
-        const {clients, gameState} = this.store;
+        const {gameState} = this.store;
 
         // move to game from lobby
         gameState.inLobby = false;
         this._emitStartGame(this.store.gameState.inLobby)
         console.info(`[StartGame] Moving from lobby to game, in ${this.roomId} room`);
 
+        this._prepAndStartNewTurn();
+
+        console.info(`[CREATE] All players ready, Game starts in ${this.roomId} room`);
+    }
+
+    _prepAndStartNewTurn() {
+        const {clients, gameState} = this.store;
+        const {rounds, currentRound, gameConfig} = gameState;
+        const round: Round = rounds[currentRound];
         // start new round and announce roles
-        setTimeout(this._startNewRound.bind(this), 2000)
+        if (currentRound === -1 || gameConfig.maxTurn <= round.currentTurn) {
+            setTimeout(this._startNewRound.bind(this), 2000)
+        }
 
         const announceRoles = () => {
+            const {rounds, currentRound} = this.store.gameState;
+            const round: Round = rounds[currentRound];
             clients.forEach((client: Player) => client.isGuessing = false)
-            clients[0].isGuessing = true;
-            const guesser: Player = clients[0];
+            const guesserId = (round.currentTurn + 1) % clients.length;
+            clients[guesserId].isGuessing = true
+
+            const guesser: Player = clients[guesserId];
             this._emitRoleGeneral(guesser)
             console.info(`[Roles] announcing guesser is ${guesser.playerName}, in ${this.roomId} room`);
         }
 
         setTimeout(announceRoles, 4000)
         setTimeout(this._startNewTurn.bind(this), 6000)
-
-        console.info(`[CREATE] All players ready, Game starts in ${this.roomId} room`);
     }
 
     _startNewRound() {
         const round = new Round();
         this.store.gameState.addRound(round)
-        this._emitRound(round)
+        this._emitRound(round, this.store.gameState.currentRound)
         console.info(`[NEWROUND] New Round starting, in ${this.roomId} room`);
 
     }
 
-    _emitNewTurn(turn: Turn) {
-        this.io.to(this.roomId).emit('start-turn', {turn})
+    _startNewTurn() {
+        const {gameState}: { gameState: GameState } = this.store;
+        const {rounds, currentRound, gameConfig} = gameState;
+        const turn = new Turn(this._getSecretWord());
+        const round = rounds[currentRound];
+        round.addTurn(turn)
+        this._emitNewTurn(turn, currentRound, round.currentTurn)
+        console.info(`[NEWTURN] New Turn starting, in ${this.roomId} room`);
+        this._startCountDown(gameConfig.hintTimeout / 1000, this._hintToGuessTransition.bind(this))
     }
 
-    _emitHintEnd() {
-        this.io.to(this.roomId).emit('end-hint', {message: "hint end"})
+    _emitNewTurn(turn: Turn, currentRound: any, currentTurn: number) {
+        this.io.to(this.roomId).emit('start-turn', {turn, currentRound, currentTurn})
     }
 
-    _startCountDown(delay: number) {
+    _startCountDown(delay: number, transition: () => void) {
         this.store.countDownTimeout = setTimeout(() => {
-            this._hintEnd()
-            this._revealHints()
-            this._startNewGuess()
+            transition()
         }, delay * 1000)
 
         let countdown = delay;
-        this.io.to(this.roomId).emit('hint-countdown', {countdown})
+        this.io.to(this.roomId).emit('countdown', {countdown})
         this.store.countDownInterval = setInterval(() => {
             countdown -= 1
-            this.io.to(this.roomId).emit('hint-countdown', {countdown})
+            this.io.to(this.roomId).emit('countdown', {countdown})
         }, 1000)
+    }
+
+    _hintToGuessTransition() {
+        this._hintEnd()
+        this._markDuplicatesForCurrentTurn()
+        this._revealHints()
+        this._startNewGuess()
     }
 
     _hintEnd() {
@@ -259,39 +337,79 @@ class Room2 {
         this._emitHintEnd()
     }
 
-    _startNewTurn() {
-        const {gameState} = this.store;
-        const {rounds, currentRound, gameConfig} = gameState;
-        const turn = new Turn(this._getSecretWord());
-        rounds[currentRound.call(gameState)].addTurn(turn)
-        this._emitNewTurn(turn)
-        console.info(`[NEWTURN] New Turn starting, in ${this.roomId} room`);
-        this._startCountDown(gameConfig.hintTimeout / 1000)
+    _emitHintEnd() {
+        this.io.to(this.roomId).emit('end-hint', {message: "hint end"})
     }
 
     _revealHints() {
-        const {gameState} = this.store;
+        const {gameState}: { gameState: GameState } = this.store;
         const {rounds, currentRound} = gameState;
-        const round: Round = rounds[currentRound.call(gameState)]
-        const turn: Turn = round.turns[round.currentTurn()]
-        this._emitHints(turn.hints)
+        const round: Round = rounds[currentRound]
+        const turn: Turn = round.turns[round.currentTurn]
+        this._emitHints(turn.hints, currentRound, round.currentTurn)
         // check for duplicates bit
         turn.reveal = true
-        this._emitReveal(turn.reveal)
+        this._emitReveal(turn.reveal, currentRound, round.currentTurn)
     }
 
-    _emitHints(hints: string[]) {
-        this.io.to(this.roomId).emit('turn-hints', {hints})
+    _emitHints(hints: Hint[], currentRound: number, currentTurn: number) {
+        this.io.to(this.roomId).emit('turn-hints', {hints, currentRound, currentTurn})
     }
 
-    _emitReveal(reveal: boolean) {
-        this.io.to(this.roomId).emit('turn-hints-reveal', {reveal})
+    _emitReveal(reveal: boolean, currentRound: number, currentTurn: number) {
+        this.io.to(this.roomId).emit('turn-hints-reveal', {reveal, currentRound, currentTurn})
+    }
+
+    _markDuplicatesForCurrentTurn() {
+        const {gameState}: { gameState: GameState } = this.store;
+        const {rounds, currentRound} = gameState;
+        const round: Round = rounds[currentRound]
+        const turn: Turn = round.turns[round.currentTurn]
+        this._markDuplicates(turn.hints)
+    }
+
+    _markDuplicates(hints: Hint[]) {
+        hints.sort((a, b) => a.hint.localeCompare(b.hint)).forEach((hint, index, arr) => {
+            if (index < arr.length - 1 && hint.hint.toUpperCase() === arr[index + 1].hint.toUpperCase()) {
+                hint.duplicate = true;
+                arr[index + 1].duplicate = true
+            }
+        })
     }
 
     _startNewGuess() {
-
+        this._startCountDown(this.store.gameState.gameConfig.guessTimeout / 1000, this._guessToNewTurnTransition.bind(this))
     }
 
+    _guessToNewTurnTransition() {
+        this._revealTurnResult()
+        this._prepAndStartNewTurn()
+    }
+
+    _revealTurnResult() {
+        const {gameState}: { gameState: GameState } = this.store;
+        const {rounds, currentRound, gameConfig} = gameState;
+        const round: Round = rounds[currentRound]
+        const turn: Turn = round.turns[round.currentTurn]
+
+        const match = turn.guess === turn.secretWord
+        if (match) {
+            round.points += 1
+        } else {
+            gameConfig.maxTurn ? round.points -= 1 : gameConfig.maxTurn -= 1
+        }
+        const result = match ? 'success' : 'failure'
+        turn.result = result;
+        this._emitTurnResults(currentRound, round.currentTurn, round.points, gameConfig.maxTurn, result)
+    }
+
+    _emitTurnResults(currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string) {
+        this.io.to(this.roomId).emit('turn-result', {currentRound, currentTurn, points, maxTurn, result})
+    }
+
+    private _emitPlayerDisconnected(disconnectedPlayer: Player) {
+        this.io.to(this.roomId).emit('disconnected', {disconnectedPlayer})
+    }
 }
 
 module.exports = Room2;

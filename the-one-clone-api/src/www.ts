@@ -47,7 +47,7 @@ sockio.on('connection', async (socket: Socket) => {
     room.isReady() // this just register a handler
     room.showGameState()
     // room.registerGameHandlers()
-    // room.onDisconnect()
+    room.onDisconnect()
     }
 );
 

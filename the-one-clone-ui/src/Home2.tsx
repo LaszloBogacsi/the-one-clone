@@ -2,7 +2,7 @@ import React, {ChangeEvent, useEffect, useReducer, useState} from "react";
 import io, {Socket} from "socket.io-client";
 import {useLocation} from "react-router-dom";
 
-interface Player {
+export interface Player {
     id: string
     name: string
     isReady: boolean
@@ -11,27 +11,29 @@ interface Player {
     isGuessing: boolean
 }
 
-interface Hint {
-    player: Player
+export interface Hint {
+    player: string
     hint: string
     duplicate: boolean
 }
 
-interface Turn {
+export interface Turn {
     secretWord: string
     hints: Hint[]
     reveal: boolean
     guess: string
-    result: string
+    result?: string
 }
 
-interface Round {
+export interface Round {
     turns: Turn[]
     points: number
+    currentTurn: number
 }
 
-interface GameState {
+export interface GameState {
     rounds: Round[]
+    currentRound: number
     maxRound: number
     inLobby: boolean
     maxTurn: number
@@ -39,13 +41,11 @@ interface GameState {
     guessTimeout: number
 }
 
-interface CountdownState {
-    hintCountdown: number
-    guessCountDown: number
-}
 
+// might not use this
 interface Game {
     gameState: GameState
+    countdown: number
     players: Player[]
 }
 
@@ -54,12 +54,96 @@ function useQuery() {
     return new URLSearchParams(useLocation().search);
 }
 
+export type GameStateAction =
+    | { type: 'setGameState', payload: GameState }
+    | { type: 'setInLobby', payload: boolean }
+    | { type: 'addRound', payload: { round: Round, currentRound: number } }
+    | { type: 'addTurn', payload: { turn: Turn, currentRound: number, currentTurn: number } }
+    | { type: 'addHints', payload: { hints: Hint[], currentRound: number, currentTurn: number } }
+    | { type: 'setTurnHintsReveal', payload: { reveal: boolean, currentRound: number, currentTurn: number } }
+    | { type: 'setTurnResult', payload: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string } }
+
+export function gameStateReducer(state: GameState, action: GameStateAction): GameState {
+    const {rounds} = state;
+    switch (action.type) {
+        case "setTurnResult":
+            return {
+                ...state,
+                rounds: rounds.map((round, index) => {
+                    const {currentRound, currentTurn, points, result} = action.payload;
+                    if (index === currentRound) {
+                        round.points = points;
+                        round.turns.map((turn, index) => {
+                            if (index === currentTurn) {
+                                turn.result = result;
+                                return turn;
+                            }
+                            return turn;
+                        })
+                    }
+                    return round;
+                }),
+                maxTurn: action.payload.maxTurn
+            }
+        case "setTurnHintsReveal":
+            return {
+                ...state, rounds: rounds.map((round, index) => {
+                    const {reveal, currentTurn, currentRound} = action.payload;
+                    if (index === currentRound) {
+                        round.turns.map((turn, index) => {
+                            if (index === currentTurn) {
+                                turn.reveal = reveal;
+                                return turn;
+                            }
+                            return turn;
+                        })
+                    }
+                    return round;
+                })
+            }
+        case "addHints":
+            return {
+                ...state, rounds: rounds.map((round, index) => {
+                    const {currentTurn, currentRound, hints} = action.payload;
+                    if (index === currentRound) {
+                        round.turns.map((turn, index) => {
+                            if (index === currentTurn) {
+                                turn.hints = [...hints];
+                                return turn;
+                            }
+                            return turn;
+                        })
+                    }
+                    return round;
+                })
+            }
+
+        case "addTurn":
+            const {turn, currentRound, currentTurn} = action.payload;
+            return {
+                ...state,
+                rounds: [...rounds.slice(0, currentRound), {
+                    ...(rounds[currentRound]),
+                    turns: [...rounds[currentRound].turns, turn],
+                    currentTurn
+                }]
+            }
+        case "addRound":
+            return {...state, rounds: [...rounds, action.payload.round], currentRound: action.payload.currentRound}
+        case "setInLobby":
+            return {...state, inLobby: action.payload};
+        case 'setGameState':
+            return {...action.payload};
+        default:
+            throw new Error(`unsupported action type`)
+    }
+}
+
 export function Home2() {
     let query = useQuery();
 
     const [socket, setSocket] = useState<Socket>();
     const [roomId, setRoomId] = useState("09zzt1lym3");
-    const [players, setPlayers] = useState<Player[]>([]);
     const [me, setMe] = useState<Player>();
 
     // INPUTS
@@ -70,40 +154,48 @@ export function Home2() {
     // const [turnResult, setTurnResult] = useState<string>();
     // const [hintCountdown, setHintCountdown] = useState<number>();
     // const [guessCountdown, setGuessCountdown] = useState<number>();
-    type GameStateAction =
-        | { type: 'setGameState', payload: GameState }
-        | { type: 'setInLobby', payload: boolean  }
-        | { type: 'addRound', payload: Round  }
-        | { type: 'addTurn', payload: Turn  }
 
 
+    type PlayerAction =
+        | { type: 'updateGuesser', payload: { id: string, name: string } }
+        | { type: 'addPlayer', payload: Player }
+        | { type: 'updatePlayerIsReady', payload: { id: string, isReady: boolean } }
+        | { type: 'removePlayer', payload: Player }
 
-
-    function gameStateReducer(state: GameState, action: GameStateAction): GameState {
-        const {rounds} = state;
+    function playersReducer(state: Player[], action: PlayerAction): Player[] {
         switch (action.type) {
-            case "addTurn":
-                return {...state, rounds: [...rounds.slice(0, rounds.length-1), {...(rounds[currentRound(rounds)]), turns: [...rounds[currentRound(rounds)].turns, action.payload]}]}
-            case "addRound":
-                return {...state, rounds: [...rounds, action.payload]}
-            case "setInLobby":
-                return {...state, inLobby: action.payload};
-            case 'setGameState':
-                return {...action.payload};
+            case "removePlayer":
+                return state.filter(player => player.id !== action.payload.id)
+            case "updatePlayerIsReady":
+                return [...state.map(player => {
+                    if (player.id === action.payload.id) {
+                        player.isReady = action.payload.isReady
+                    }
+                    return player
+                })]
+            case "addPlayer":
+                return state.findIndex((player => player.id === action.payload.id)) === -1 ? [...state, action.payload] : state;
+            case "updateGuesser":
+                return [...state.map(player => {
+                    player.isGuessing = false;
+                    if (player.id === action.payload.id) {
+                        return {...player, isGuessing: true}
+                    }
+                    return player
+                })]
             default:
                 throw new Error(`unsupported action type`)
         }
     }
 
-    type PlayerAction =
-        | { type: 'updateGuesser', payload: {id: string, name: string}}
-    function playersReducer(state: Player[], action: PlayerAction): Player[] {
-        switch (action.type) {
-            case "updateGuesser":
-                return state.map(player => {
-                    player.isGuessing = player.id === action.payload.id;
-                    return player
-                })
+    type CountdownAction =
+        | { type: 'updateCountdown', payload: { countdown: number } }
+
+    function countdownReducer(state: number, action: CountdownAction): number {
+        const {type, payload} = action;
+        switch (type) {
+            case "updateCountdown":
+                return payload.countdown
             default:
                 throw new Error(`unsupported action type`)
         }
@@ -111,19 +203,33 @@ export function Home2() {
 
     const [{
         rounds,
+        currentRound,
         inLobby,
         guessTimeout,
         hintTimeout,
         maxRound,
         maxTurn
-    }, dispatchGameAction] = useReducer(gameStateReducer, {rounds: [], inLobby: true, guessTimeout: 0, hintTimeout: 0, maxRound: 0, maxTurn:0} as GameState)
-    const [state, dispatchPlayerAction] = useReducer(playersReducer, [] as Player[])
+    }, dispatchGameAction] = useReducer(gameStateReducer, {
+        rounds: [],
+        currentRound: -1,
+        inLobby: true,
+        guessTimeout: 0,
+        hintTimeout: 0,
+        maxRound: 0,
+        maxTurn: 0
+    } as GameState)
+    const [players, dispatchPlayerAction] = useReducer(playersReducer, [] as Player[])
+    const [countdown, dispatchCountdownAction] = useReducer(countdownReducer, hintTimeout)
 
-    function currentRound(rounds: Round[]): number {
-        return rounds.length - 1;
+    function playerRolesListener(data: { guesser: { id: string, name: string } }) {
+        console.log(me)
+        if (me?.id === data.guesser.id) {
+            // setMe(players.find(player => player.id === me.id))
+            setMe({...me, isGuessing: true})
+        }
+        // TODO(do the me thing better)
+        dispatchPlayerAction({type: 'updateGuesser', payload: data.guesser})
     }
-
-    const currentTurn = (round: Round): number => round.turns.length - 1;
 
     useEffect(() => {
         const toPlayer = (player: any): Player => {
@@ -139,74 +245,87 @@ export function Home2() {
 
         if (socket) {
             socket.on('connect', () => {
-                console.log(socket)
+
             })
-            /* EVENTS to handle
-                  - connect_error
-            */
-            // socket.on('show-players', (data: { playersJoined: any[] }) => {
-            //     console.log(data)
-            //     const playersJoined = data.playersJoined || []
-            //     console.log(data.playersJoined)
-            //     setPlayers(toPlayers(playersJoined))
-            //     setMe(playersJoined.find(player => player.id === socket.id))
-            // })
+            socket.on('disconnected', (data: {disconnectedPlayer: any}) => {
+                dispatchPlayerAction({type: 'removePlayer', payload: toPlayer(data.disconnectedPlayer)})
+            })
 
             socket.on('player-joined-lobby', (data: { playerJoined: any }) => {
-                console.log(data)
-                setPlayers(prevState => [...prevState, toPlayer(data.playerJoined)])
+
+
+                dispatchPlayerAction({type: 'addPlayer', payload: toPlayer(data.playerJoined)})
             })
             socket.on('player-ready-change', (data: { id: string, isReady: boolean }) => {
-                console.log(data)
-                setPlayers(prevState => {
-                    return prevState.map(player => {
-                        if (player.id === data.id) player.isReady = data.isReady
-                        return player
-                    })
-                })
+
+                dispatchPlayerAction({type: 'updatePlayerIsReady', payload: data})
             })
 
             socket.on('show-game-state', (data: { gameState: any }) => {
-                console.log(data)
-                const toGameState = (gameState: any): GameState => {
-                    return {
-                        guessTimeout: gameState.gameConfig.guessTimeout,
-                        hintTimeout: gameState.gameConfig.hintTimeout,
-                        maxRound: gameState.gameConfig.maxRound,
-                        maxTurn: gameState.gameConfig.maxTurn,
-                        inLobby: gameState.inLobby,
-                        rounds: gameState.rounds
-                    }
-                }
+
+                const toGameState = (gameState: any): GameState => ({
+                    guessTimeout: gameState.gameConfig.guessTimeout,
+                    hintTimeout: gameState.gameConfig.hintTimeout,
+                    maxRound: gameState.gameConfig.maxRound,
+                    maxTurn: gameState.gameConfig.maxTurn,
+                    inLobby: gameState.inLobby,
+                    rounds: gameState.rounds,
+                    currentRound: gameState.currentRound
+                })
+
                 dispatchGameAction({type: "setGameState", payload: toGameState(data.gameState)})
             })
 
-            socket.on('start-game', (data: {inLobby: boolean}) => {
-                console.log(data)
-                dispatchGameAction({type: 'setInLobby', payload: data.inLobby})
-            })
-            socket.on('start-round', (data: {round: Round}) => {
-                console.log(data)
-                dispatchGameAction({type: 'addRound', payload: data.round})
-            })
-            socket.on('player-roles', (data: {guesser:{id: string, name: string} }) => {
-                console.log(data)
-                dispatchPlayerAction({type: 'updateGuesser', payload: data.guesser})
-            })
-            socket.on('start-turn', (data: {turn: Turn}) => {
-                console.log(data)
-                dispatchGameAction({type: 'addTurn', payload: data.turn})
+            socket.on('start-game', (data: { inLobby: boolean }) => dispatchGameAction({
+                type: 'setInLobby',
+                payload: data.inLobby
+            }))
+
+            socket.on('start-round', (data: { round: Round, currentRound: number }) => dispatchGameAction({
+                type: 'addRound',
+                payload: {...data}
+            }))
+
+            socket.on('player-roles', playerRolesListener)
+
+            socket.on('start-turn', (data: { turn: Turn, currentRound: number, currentTurn: number }) => dispatchGameAction({
+                type: 'addTurn',
+                payload: {...data}
+            }))
+
+            socket.on('countdown', (data: { countdown: number }) => dispatchCountdownAction({
+                type: 'updateCountdown',
+                payload: {...data}
+            }))
+
+            socket.on('end-hint', (data: { message: string }) => {
+                console.log(data)// TODO(Implement this)
             })
 
+            socket.on('turn-hints', (data: { hints: Hint[], currentRound: number, currentTurn: number }) => dispatchGameAction({
+                type: 'addHints',
+                payload: {...data}
+            }))
 
+            socket.on('turn-hints-reveal', (data: { reveal: boolean, currentRound: number, currentTurn: number }) => dispatchGameAction({
+                type: 'setTurnHintsReveal',
+                payload: {...data}
+            }))
+
+            socket.on('turn-result', (data: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string }) => dispatchGameAction({
+                type: 'setTurnResult',
+                payload: {...data}
+            }))
         }
 
-
-    }, [socket])
+    }, [socket, rounds])
 
     useEffect(() => {
-        if (players) {
-            setMe(players.find(player => player.isMe))
+        if (players.length > 0) {
+            const maybeMe = players.find(player => player.isMe);
+            if (maybeMe) {
+                setMe(maybeMe)
+            }
         }
     }, [players])
 
@@ -291,7 +410,7 @@ export function Home2() {
                     {players?.map(player => <li key={player.id}>id: {player.id},
                         name: {player.name} ready?: {player.isReady.toString()},
                         guessing?: {player.isGuessing.toString()},
-                        hinted?: {rounds.length && rounds[currentRound(rounds)].turns.length ? rounds[currentRound(rounds)].turns[currentTurn(rounds[currentRound(rounds)])].hints.some(h => h.player.id === player.id).toString() : "N/A"}</li>)}
+                        hinted?: {rounds.length && rounds[currentRound].turns.length ? rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.some(h => h.player === player.id).toString() : "N/A"}</li>)}
                 </div>
                 <div>
                     {me && <button onClick={onReady}>{me.isReady ? 'Not Ready' : 'I\'m Ready'}</button>}
@@ -302,66 +421,54 @@ export function Home2() {
             {!inLobby && rounds.length > 0 &&
             <div>
                 <div>
-                    Rounds: {maxTurn}/{currentTurn(rounds[currentRound(rounds)])}
-                    Points:{rounds[currentRound(rounds)].points}
+                    Rounds: {maxTurn}/{rounds[currentRound].currentTurn}
+                    Points:{rounds[currentRound].points}
                 </div>
-                {/*{hintCountdown &&*/}
-                {/*<div>*/}
-                {/*    HintCountdown: {hintCountdown}*/}
-                {/*</div>}*/}
-                {/*{guessCountdown &&*/}
-                {/*<div>*/}
-                {/*    GuessCountdown: {guessCountdown}*/}
-                {/*</div>}*/}
+                <div>
+                    Countdown: {countdown}
+                </div>
+
                 {me && me.isGuessing &&
                 <p>I'm guessing</p>
                 }
                 <div>
-                    <p>Current Round: {currentRound(rounds)}</p>
-                    <p>Current Turn: {currentTurn(rounds[currentRound(rounds)])}</p>
+                    <p>Current Round: {currentRound}</p>
+                    <p>Current Turn: {rounds[currentRound].currentTurn}</p>
                 </div>
 
-                {me && !me.isGuessing && rounds.length && rounds[currentRound(rounds)].turns.length &&
+                {me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&
                 <div>
                     <p>I'm hinting here is the secret
-                        word: {rounds[currentRound(rounds)].turns[currentTurn(rounds[currentRound(rounds)])].secretWord}</p>
-                    {!rounds[currentRound(rounds)].turns[currentTurn(rounds[currentRound(rounds)])].reveal &&
-
+                        word: {rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}</p>
                     <div>
                         <input value={hint} onChange={onInputChange} name={"hint"} type="text"/>
                         <button onClick={onHint}>Hint!</button>
-                        {players?.length === 3 &&
-                        <div>
-                            <input value={hintSecond} onChange={onInputChange} name={"hintSecond"} type="text"/>
-                            <button onClick={onHintSecond}>Hint!</button>
-                        </div>
+                    </div>
+                    {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&
+                    <div>
+                        Hints:
+                        {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) => <li
+                            key={index}>{hint.hint} {hint.duplicate ? <span>Duplicate</span> : null}</li>)}
+                    </div>}
 
-                        }
+                </div>
+                }
+                {me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&
+                <div>
+                    {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&
+                    <div>
+                        <div>
+                            Hints:
+                            {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) => <li
+                                key={index}>{hint.hint} {hint.duplicate ? <span>Duplicate</span> : null}</li>)}
+                        </div>
+                        <div>
+                            <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>
+                            <button onClick={onGuess}>Guess!</button>
+                        </div>
                     </div>
                     }
 
-                    {/*{turnResult &&*/}
-                    {/*<div>*/}
-                    {/*    {players && players!.find(pl => pl.isGuessing)?.name} guessed {turnResult === 'success' ? 'CORRRECTLY' : 'INCORRECTLY'}*/}
-                    {/*</div>*/}
-                    {/*}*/}
-                </div>
-                }
-                {me && me.isGuessing && rounds[currentRound(rounds)].turns[currentTurn(rounds[currentRound(rounds)])].reveal &&
-                <div>
-                    {rounds[currentRound(rounds)].turns[currentTurn(rounds[currentRound(rounds)])].hints.map(hint =>
-                        <li key={hint.player.id}>{hint.duplicate ? "duplicate hint" : hint.hint}</li>)}
-                    {rounds[currentRound(rounds)].turns[currentTurn(rounds[currentRound(rounds)])].hints.length === 0 &&
-                    <div>No Hint Submitted</div>
-                    }
-                    <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>
-                    <button onClick={onGuess}>Guess!</button>
-                    <button onClick={onSkip}>Skip</button>
-                    {/*{turnResult &&*/}
-                    {/*<div>*/}
-                    {/*    You guessed {turnResult === 'success' ? 'CORRECTLY' : 'INCORRECTLY'}*/}
-                    {/*</div>*/}
-                    {/*}*/}
                 </div>
                 }
             </div>
