@@ -15,7 +15,6 @@
     font-family: cafeteriaregular;
     transform: skew(2deg, -0.5deg);
 
-
 }
 
 .playerNameInputWrapper {
@@ -24,4 +23,6 @@
     border-radius: 8px;
     width: fit-content;
     transform: skew(-1deg, 0.3deg);
+    margin-bottom: 2rem;
+
 }

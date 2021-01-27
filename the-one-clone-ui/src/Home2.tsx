@@ -240,7 +240,7 @@ export function Home2() {
             <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom}/>
             }
             {inLobby && <Lobby players={players} me={me} onReady={onReady}>
-                {results.length > 0 ? <GameResults results={results}/> : null}
+                {results && results.length > 0 ? <GameResults results={results}/> : null}
             </Lobby>}
 
             {!inLobby && rounds.length > 0 &&
