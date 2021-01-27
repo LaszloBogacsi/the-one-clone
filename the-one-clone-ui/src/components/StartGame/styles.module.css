@@ -1,0 +1,27 @@
+.startGame {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-flow: column;
+}
+
+.playerNameInput {
+    padding: 1rem;
+    border: 1px solid white;
+    font-size: 5rem;
+    text-align: center;
+    border-radius: 2px;
+    font-family: cafeteriaregular;
+    transform: skew(2deg, -0.5deg);
+
+
+}
+
+.playerNameInputWrapper {
+    background-color: var(--backgroundDark);
+    padding: 1rem;
+    border-radius: 8px;
+    width: fit-content;
+    transform: skew(-1deg, 0.3deg);
+}

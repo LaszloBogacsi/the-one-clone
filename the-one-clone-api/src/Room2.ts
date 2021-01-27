@@ -165,10 +165,11 @@ class Room2 {
             this.store.clients = this.store.clients.filter((client: Player) => client.id !== this.socket.id)
             // when all players disconnected
             if (!this.store.clients.length) {
+                this._clearTimeouts();
                 console.info(`[GAME OVER] All players disconnected from ${this.roomId}`);
                 // this.gameOver()
             }
-            this._emitPlayerDisconnected(disconnectedPlayer)
+            if (disconnectedPlayer) this._emitPlayerDisconnected(disconnectedPlayer)
         })
     }
 
@@ -204,39 +205,12 @@ class Room2 {
     resetGameState() {
         const config = new GameConfig(
             2,
-            20_000,
-            50_000,
+            3_000,
+            5_000,
             3
         )
         this.store.gameState = new GameState(config)
     }
-
-    /*
-
-    ####  GAME  ####
-
-    - hint-start
-    .. timeout - hint
-    - hint-status
-    - hint-end ?
-    - guess-start
-    .. timeout guess
-    - guess-end ?
-    - guess-result
-    ...
-    ...
-    ...
-    - roles-announce
-    ...
-    - guess-result
-    - round-result
-    - round-announce
-    ...
-    ...
-    - game-over
-    - game-results
-
-     */
 
     _emitStartGame(inLobby: boolean) {
         this.io.to(this.roomId).emit('start-game', {inLobby})
@@ -326,6 +300,7 @@ class Room2 {
     }
 
     _hintToGuessTransition() {
+        this._clearTimeouts()
         this._hintEnd()
         this._markDuplicatesForCurrentTurn()
         this._revealHints()
@@ -382,8 +357,14 @@ class Room2 {
     }
 
     _guessToNewTurnTransition() {
+        this._clearTimeouts()
         this._revealTurnResult()
-        this._prepAndStartNewTurn()
+        !this._isGameOver() ? this._prepAndStartNewTurn() : this._gameOver()
+    }
+
+    _isGameOver (): boolean {
+        const {currentRound, gameConfig} = this.store.gameState;
+        return gameConfig.maxRounds <= currentRound
     }
 
     _revealTurnResult() {
@@ -396,7 +377,7 @@ class Room2 {
         if (match) {
             round.points += 1
         } else {
-            gameConfig.maxTurn ? round.points -= 1 : gameConfig.maxTurn -= 1
+            gameConfig.maxTurn ? round.points -= 1 : gameConfig.maxTurn -= 1 // TODO: Maybe a round shoud have an effective max turn
         }
         const result = match ? 'success' : 'failure'
         turn.result = result;
@@ -407,8 +388,34 @@ class Room2 {
         this.io.to(this.roomId).emit('turn-result', {currentRound, currentTurn, points, maxTurn, result})
     }
 
-    private _emitPlayerDisconnected(disconnectedPlayer: Player) {
+    _emitPlayerDisconnected(disconnectedPlayer: Player) {
         this.io.to(this.roomId).emit('disconnected', {disconnectedPlayer})
+    }
+
+    _gameOver() {
+        const {clients, gameState}: {clients: Player[], gameState: GameState} = this.store;
+        clients.forEach((client: Player) => {
+            client.isGuessing = false;
+            client.isReady = false;
+        })
+        this._clearTimeouts()
+        gameState.inLobby = true;
+        this._emitGameOver(gameState.inLobby);
+        this.emitAllPlayers(clients);
+        const results = gameState.rounds.map(round => round.points)
+        this._emitGameResults(results);
+    }
+
+    _emitGameOver(inLobby: boolean) {
+        this.io.to(this.roomId).emit('end-game', {inLobby})
+    }
+
+    emitAllPlayers(clients: Player[]) {
+        this.io.to(this.roomId).emit('show-all-players', {clients})
+    }
+
+    _emitGameResults(results: number[]) {
+        this.io.to(this.roomId).emit('game-result', {results})
     }
 }
 

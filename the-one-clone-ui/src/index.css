@@ -1,13 +1,36 @@
+html, body {
+  height: 100%
+}
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'cafeteriaregular', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: rgb(251, 250, 244);
+  background: url("./img/taches.png"), url("./img/triangles.png"), radial-gradient(circle, rgba(251,250,244,1) 0%, rgba(226,211,173,1) 100%);
+  background-repeat: no-repeat;
+  background-size: 100%;
+  --gameAccentOrange: #f08100;
+  --gamaeAccentRed: #c80c12;
+  --gameAccentPink: #e6127d;
+  --gameAccentPurple: #792a81;
+  --gameAccentBlue: #0086c8;
+  --gameAccentGreen: #42a338;
+  --gameAccentYellow: #f5ae07;
+  --backgroundDark: #dfc998;
+  --backgroundLight: #f2e9da;
+
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@font-face {
+  font-family: 'cafeteriaregular';
+  src: local('cafeteriaregular'), url(./fonts/CafeteriaRegular.ttf) format('truetype');
 }
+
+@font-face {
+  font-family: 'cafeteriabold';
+  src: local('cafeteriabold'), url(./fonts/CafeteriaBold.otf) format('opentype');
+}
+

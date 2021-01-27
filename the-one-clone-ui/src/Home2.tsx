@@ -1,142 +1,20 @@
 import React, {ChangeEvent, useEffect, useReducer, useState} from "react";
 import io, {Socket} from "socket.io-client";
 import {useLocation} from "react-router-dom";
-
-export interface Player {
-    id: string
-    name: string
-    isReady: boolean
-    isMe: boolean
-    isAdmin: boolean
-    isGuessing: boolean
-}
-
-export interface Hint {
-    player: string
-    hint: string
-    duplicate: boolean
-}
-
-export interface Turn {
-    secretWord: string
-    hints: Hint[]
-    reveal: boolean
-    guess: string
-    result?: string
-}
-
-export interface Round {
-    turns: Turn[]
-    points: number
-    currentTurn: number
-}
-
-export interface GameState {
-    rounds: Round[]
-    currentRound: number
-    maxRound: number
-    inLobby: boolean
-    maxTurn: number
-    hintTimeout: number
-    guessTimeout: number
-}
-
-
-// might not use this
-interface Game {
-    gameState: GameState
-    countdown: number
-    players: Player[]
-}
-
+import {Player} from "./Player";
+import {Hint} from "./Hint";
+import {Turn} from "./Turn";
+import {Round} from "./Round";
+import {GameState} from "./GameState";
+import {gameStateReducer} from "./GameStateReducer";
+import {playersReducer} from "./PlayersReducer";
+import {countdownReducer} from "./CountdownReducer";
+import {StartGame} from "./components/StartGame/StartGame";
+import {Lobby} from "./Lobby";
+import {GameResults} from "./GameResults";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
-}
-
-export type GameStateAction =
-    | { type: 'setGameState', payload: GameState }
-    | { type: 'setInLobby', payload: boolean }
-    | { type: 'addRound', payload: { round: Round, currentRound: number } }
-    | { type: 'addTurn', payload: { turn: Turn, currentRound: number, currentTurn: number } }
-    | { type: 'addHints', payload: { hints: Hint[], currentRound: number, currentTurn: number } }
-    | { type: 'setTurnHintsReveal', payload: { reveal: boolean, currentRound: number, currentTurn: number } }
-    | { type: 'setTurnResult', payload: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string } }
-
-export function gameStateReducer(state: GameState, action: GameStateAction): GameState {
-    const {rounds} = state;
-    switch (action.type) {
-        case "setTurnResult":
-            return {
-                ...state,
-                rounds: rounds.map((round, index) => {
-                    const {currentRound, currentTurn, points, result} = action.payload;
-                    if (index === currentRound) {
-                        round.points = points;
-                        round.turns.map((turn, index) => {
-                            if (index === currentTurn) {
-                                turn.result = result;
-                                return turn;
-                            }
-                            return turn;
-                        })
-                    }
-                    return round;
-                }),
-                maxTurn: action.payload.maxTurn
-            }
-        case "setTurnHintsReveal":
-            return {
-                ...state, rounds: rounds.map((round, index) => {
-                    const {reveal, currentTurn, currentRound} = action.payload;
-                    if (index === currentRound) {
-                        round.turns.map((turn, index) => {
-                            if (index === currentTurn) {
-                                turn.reveal = reveal;
-                                return turn;
-                            }
-                            return turn;
-                        })
-                    }
-                    return round;
-                })
-            }
-        case "addHints":
-            return {
-                ...state, rounds: rounds.map((round, index) => {
-                    const {currentTurn, currentRound, hints} = action.payload;
-                    if (index === currentRound) {
-                        round.turns.map((turn, index) => {
-                            if (index === currentTurn) {
-                                turn.hints = [...hints];
-                                return turn;
-                            }
-                            return turn;
-                        })
-                    }
-                    return round;
-                })
-            }
-
-        case "addTurn":
-            const {turn, currentRound, currentTurn} = action.payload;
-            return {
-                ...state,
-                rounds: [...rounds.slice(0, currentRound), {
-                    ...(rounds[currentRound]),
-                    turns: [...rounds[currentRound].turns, turn],
-                    currentTurn
-                }]
-            }
-        case "addRound":
-            return {...state, rounds: [...rounds, action.payload.round], currentRound: action.payload.currentRound}
-        case "setInLobby":
-            return {...state, inLobby: action.payload};
-        case 'setGameState':
-            return {...action.payload};
-        default:
-            throw new Error(`unsupported action type`)
-    }
 }
 
 export function Home2() {
@@ -147,60 +25,20 @@ export function Home2() {
     const [me, setMe] = useState<Player>();
 
     // INPUTS
-    const [playerName, setPlayerName] = useState("");
     const [hint, setHint] = useState<string>();
     const [hintSecond, setHintSecond] = useState<string>();
     const [guess, setGuess] = useState<string>();
-    // const [turnResult, setTurnResult] = useState<string>();
-    // const [hintCountdown, setHintCountdown] = useState<number>();
-    // const [guessCountdown, setGuessCountdown] = useState<number>();
 
-
-    type PlayerAction =
-        | { type: 'updateGuesser', payload: { id: string, name: string } }
-        | { type: 'addPlayer', payload: Player }
-        | { type: 'updatePlayerIsReady', payload: { id: string, isReady: boolean } }
-        | { type: 'removePlayer', payload: Player }
-
-    function playersReducer(state: Player[], action: PlayerAction): Player[] {
-        switch (action.type) {
-            case "removePlayer":
-                return state.filter(player => player.id !== action.payload.id)
-            case "updatePlayerIsReady":
-                return [...state.map(player => {
-                    if (player.id === action.payload.id) {
-                        player.isReady = action.payload.isReady
-                    }
-                    return player
-                })]
-            case "addPlayer":
-                return state.findIndex((player => player.id === action.payload.id)) === -1 ? [...state, action.payload] : state;
-            case "updateGuesser":
-                return [...state.map(player => {
-                    player.isGuessing = false;
-                    if (player.id === action.payload.id) {
-                        return {...player, isGuessing: true}
-                    }
-                    return player
-                })]
-            default:
-                throw new Error(`unsupported action type`)
-        }
-    }
-
-    type CountdownAction =
-        | { type: 'updateCountdown', payload: { countdown: number } }
-
-    function countdownReducer(state: number, action: CountdownAction): number {
-        const {type, payload} = action;
-        switch (type) {
-            case "updateCountdown":
-                return payload.countdown
-            default:
-                throw new Error(`unsupported action type`)
-        }
-    }
-
+    const initialGameState: GameState = {
+        rounds: [],
+        currentRound: -1,
+        inLobby: true,
+        guessTimeout: 0,
+        hintTimeout: 0,
+        maxRound: 0,
+        maxTurn: 0,
+        results: []
+    };
     const [{
         rounds,
         currentRound,
@@ -208,28 +46,11 @@ export function Home2() {
         guessTimeout,
         hintTimeout,
         maxRound,
-        maxTurn
-    }, dispatchGameAction] = useReducer(gameStateReducer, {
-        rounds: [],
-        currentRound: -1,
-        inLobby: true,
-        guessTimeout: 0,
-        hintTimeout: 0,
-        maxRound: 0,
-        maxTurn: 0
-    } as GameState)
+        maxTurn,
+        results
+    }, dispatchGameAction] = useReducer(gameStateReducer, initialGameState)
     const [players, dispatchPlayerAction] = useReducer(playersReducer, [] as Player[])
     const [countdown, dispatchCountdownAction] = useReducer(countdownReducer, hintTimeout)
-
-    function playerRolesListener(data: { guesser: { id: string, name: string } }) {
-        console.log(me)
-        if (me?.id === data.guesser.id) {
-            // setMe(players.find(player => player.id === me.id))
-            setMe({...me, isGuessing: true})
-        }
-        // TODO(do the me thing better)
-        dispatchPlayerAction({type: 'updateGuesser', payload: data.guesser})
-    }
 
     useEffect(() => {
         const toPlayer = (player: any): Player => {
@@ -243,118 +64,138 @@ export function Home2() {
             } as Player
         }
 
-        if (socket) {
-            socket.on('connect', () => {
-
-            })
-            socket.on('disconnected', (data: {disconnectedPlayer: any}) => {
-                dispatchPlayerAction({type: 'removePlayer', payload: toPlayer(data.disconnectedPlayer)})
-            })
-
-            socket.on('player-joined-lobby', (data: { playerJoined: any }) => {
-
-
-                dispatchPlayerAction({type: 'addPlayer', payload: toPlayer(data.playerJoined)})
-            })
-            socket.on('player-ready-change', (data: { id: string, isReady: boolean }) => {
-
-                dispatchPlayerAction({type: 'updatePlayerIsReady', payload: data})
-            })
-
-            socket.on('show-game-state', (data: { gameState: any }) => {
-
-                const toGameState = (gameState: any): GameState => ({
-                    guessTimeout: gameState.gameConfig.guessTimeout,
-                    hintTimeout: gameState.gameConfig.hintTimeout,
-                    maxRound: gameState.gameConfig.maxRound,
-                    maxTurn: gameState.gameConfig.maxTurn,
-                    inLobby: gameState.inLobby,
-                    rounds: gameState.rounds,
-                    currentRound: gameState.currentRound
-                })
-
-                dispatchGameAction({type: "setGameState", payload: toGameState(data.gameState)})
+        const playerJoinedHandler = (data: { playerJoined: any }) => dispatchPlayerAction({
+            type: 'addPlayer',
+            payload: toPlayer(data.playerJoined)
+        });
+        const playerReadyChangeHandler = (data: { id: string, isReady: boolean }) => dispatchPlayerAction({
+            type: 'updatePlayerIsReady',
+            payload: data
+        });
+        const showGameStateHandler = (data: { gameState: any }) => {
+            const toGameState = (gameState: any): GameState => ({
+                guessTimeout: gameState.gameConfig.guessTimeout,
+                hintTimeout: gameState.gameConfig.hintTimeout,
+                maxRound: gameState.gameConfig.maxRound,
+                maxTurn: gameState.gameConfig.maxTurn,
+                inLobby: gameState.inLobby,
+                rounds: gameState.rounds,
+                currentRound: gameState.currentRound,
+                results: gameState.results
             })
 
-            socket.on('start-game', (data: { inLobby: boolean }) => dispatchGameAction({
-                type: 'setInLobby',
-                payload: data.inLobby
-            }))
+            dispatchGameAction({type: "setGameState", payload: toGameState(data.gameState)})
+        };
+        const lobbyStateHandler = (data: { inLobby: boolean }) => dispatchGameAction({
+            type: 'setInLobby',
+            payload: data.inLobby
+        });
+        const startRoundHandler = (data: { round: Round, currentRound: number }) => dispatchGameAction({
+            type: 'addRound',
+            payload: {...data}
+        });
+        const playerRolesHandler = (data: { guesser: { id: string, name: string } }) => {
+            console.log(me)
+            if (me?.id === data.guesser.id) {
+                // setMe(players.find(player => player.id === me.id))
+                setMe({...me, isGuessing: true})
+            }
+            // TODO(do the me thing better)
+            dispatchPlayerAction({type: 'updateGuesser', payload: data.guesser})
+        };
+        const startTurnHandler = (data: { turn: Turn, currentRound: number, currentTurn: number }) => dispatchGameAction({
+            type: 'addTurn',
+            payload: {...data}
+        });
+        const countdownHandler = (data: { countdown: number }) => dispatchCountdownAction({
+            type: 'updateCountdown',
+            payload: {...data}
+        });
+        const endHintHandler = (data: { message: string }) => {
+            console.log(data)
+        };
+        const turnHintsHandler = (data: { hints: Hint[], currentRound: number, currentTurn: number }) => dispatchGameAction({
+            type: 'addHints',
+            payload: {...data}
+        });
+        const turnHintsRevealHandler = (data: { reveal: boolean, currentRound: number, currentTurn: number }) => dispatchGameAction({
+            type: 'setTurnHintsReveal',
+            payload: {...data}
+        });
+        const turnResultHandler = (data: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string }) => dispatchGameAction({
+            type: 'setTurnResult',
+            payload: {...data}
+        });
+        const showAllPlayersHandler = (data: { players: any }) => dispatchPlayerAction({
+            type: 'updateAllPlayers',
+            payload: data.players.map(toPlayer)
+        });
+        const gameResultHandler = (data: { results: number[] }) => dispatchGameAction({
+            type: 'setGameResult',
+            payload: [...data.results]
+        });
 
-            socket.on('start-round', (data: { round: Round, currentRound: number }) => dispatchGameAction({
-                type: 'addRound',
-                payload: {...data}
-            }))
+        socket?.on('connect', () => {
+        })
+        socket?.on('disconnected', (data: { disconnectedPlayer: any }) => {
+            dispatchPlayerAction({type: 'removePlayer', payload: toPlayer(data.disconnectedPlayer)})
+        })
+        socket?.on('player-joined-lobby', playerJoinedHandler)
+        socket?.on('player-ready-change', playerReadyChangeHandler)
+        socket?.on('show-game-state', showGameStateHandler)
+        socket?.on('start-game', lobbyStateHandler)
+        socket?.on('start-round', startRoundHandler)
+        socket?.on('player-roles', playerRolesHandler)
+        socket?.on('start-turn', startTurnHandler)
+        socket?.on('countdown', countdownHandler)
+        socket?.on('end-hint', endHintHandler)
+        socket?.on('turn-hints', turnHintsHandler)
+        socket?.on('turn-hints-reveal', turnHintsRevealHandler)
+        socket?.on('turn-result', turnResultHandler)
+        socket?.on('end-game', lobbyStateHandler)
+        socket?.on('show-all-players', showAllPlayersHandler)
+        socket?.on('game-result', gameResultHandler)
 
-            socket.on('player-roles', playerRolesListener)
+        return () => {
+            socket?.off('player-joined-lobby', playerJoinedHandler)
+            socket?.off('player-ready-change', playerReadyChangeHandler)
+            socket?.off('show-game-state', showGameStateHandler)
+            socket?.off('start-game', lobbyStateHandler)
+            socket?.off('start-round', startRoundHandler)
+            socket?.off('player-roles', playerRolesHandler)
+            socket?.off('start-turn', startTurnHandler)
+            socket?.off('countdown', countdownHandler)
+            socket?.off('end-hint', endHintHandler)
+            socket?.off('turn-hints', turnHintsHandler)
+            socket?.off('turn-hints-reveal', turnHintsRevealHandler)
+            socket?.off('turn-result', turnResultHandler)
+            socket?.off('end-game', lobbyStateHandler)
+            socket?.off('show-all-players', showAllPlayersHandler)
+            socket?.off('game-result', gameResultHandler)
 
-            socket.on('start-turn', (data: { turn: Turn, currentRound: number, currentTurn: number }) => dispatchGameAction({
-                type: 'addTurn',
-                payload: {...data}
-            }))
-
-            socket.on('countdown', (data: { countdown: number }) => dispatchCountdownAction({
-                type: 'updateCountdown',
-                payload: {...data}
-            }))
-
-            socket.on('end-hint', (data: { message: string }) => {
-                console.log(data)// TODO(Implement this)
-            })
-
-            socket.on('turn-hints', (data: { hints: Hint[], currentRound: number, currentTurn: number }) => dispatchGameAction({
-                type: 'addHints',
-                payload: {...data}
-            }))
-
-            socket.on('turn-hints-reveal', (data: { reveal: boolean, currentRound: number, currentTurn: number }) => dispatchGameAction({
-                type: 'setTurnHintsReveal',
-                payload: {...data}
-            }))
-
-            socket.on('turn-result', (data: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string }) => dispatchGameAction({
-                type: 'setTurnResult',
-                payload: {...data}
-            }))
         }
 
-    }, [socket, rounds])
+    }, [socket, me])
 
     useEffect(() => {
         if (players.length > 0) {
             const maybeMe = players.find(player => player.isMe);
-            if (maybeMe) {
-                setMe(maybeMe)
-            }
+            if (maybeMe) setMe(maybeMe)
         }
     }, [players])
 
-
-    const connectWebsocket = (action: string) => {
-        // @ts-ignore
-        setSocket(io(`ws://localhost:3000`, {forceNew: false, query: {roomId, playerName, action}}));
-    }
+    // @ts-ignore
+    const connectWebsocket = (action: string, playerName: string) => setSocket(io(`ws://localhost:3000`, {
+        forceNew: false,
+        query: {roomId, playerName, action}
+    }));
 
     // const roomId = query.get("room-id")
-    const onJoinRoom = async () => {
-        const action = "join"
-        connectWebsocket(action)
-    };
-
-    const onCreateRoom = async () => {
-        const action = "create"
-        // const roomId = Math.random().toString(36).replace(/[^\w]+/g, '').substr(0, 10)
-        // setRoomId(roomId)
-        console.log(`roomId: ${roomId}`)
-        connectWebsocket(action)
-    };
+    const onJoinRoom = async (playerName: string) => connectWebsocket("join", playerName)
+    const onCreateRoom = async (playerName: string) => connectWebsocket("create", playerName)
 
     const onInputChange = (event: ChangeEvent<HTMLInputElement>) => {
         switch (event.target.name) {
-            case "playerName": {
-                setPlayerName(event.target.value || "");
-                break;
-            }
             case "hint": {
                 setHint(event.target.value || "");
                 break;
@@ -389,34 +230,18 @@ export function Home2() {
         socket!.emit('on-player-guess-submit', {guess, skip})
         setGuess("")
     }
-    const onSkip = (event: any) => {
-        onGuess(event, true)
-    }
+    const onSkip = (event: any) => onGuess(event, true)
+
 
     return (
         <div>
-            <input value={playerName} onChange={onInputChange} name={"playerName"} type="text"
-                   placeholder={"Player Name"}/>
-            {/*{roomId ?*/}
-            <button onClick={onJoinRoom}>Join Room</button>
-            {/*:*/}
-            <button onClick={onCreateRoom}>Create Room</button>
-            {/*}*/}
-            <div>
-                Me: {JSON.stringify(me)}
-            </div>
-            <div>
-                <div>
-                    {players?.map(player => <li key={player.id}>id: {player.id},
-                        name: {player.name} ready?: {player.isReady.toString()},
-                        guessing?: {player.isGuessing.toString()},
-                        hinted?: {rounds.length && rounds[currentRound].turns.length ? rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.some(h => h.player === player.id).toString() : "N/A"}</li>)}
-                </div>
-                <div>
-                    {me && <button onClick={onReady}>{me.isReady ? 'Not Ready' : 'I\'m Ready'}</button>}
-                </div>
-            </div>
-
+            THE ONE CLONE game
+            {!socket &&
+            <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom}/>
+            }
+            {inLobby && <Lobby players={players} me={me} onReady={onReady}>
+                {results.length > 0 ? <GameResults results={results}/> : null}
+            </Lobby>}
 
             {!inLobby && rounds.length > 0 &&
             <div>
