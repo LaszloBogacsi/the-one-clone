@@ -1,0 +1,54 @@
+.lobby {
+    padding: 0 2rem;
+
+}
+
+.ready {
+    color: var(--gameAccentGreen);
+}
+
+.notReady {
+    color: var(--gameAccentRed);
+}
+
+.playerList {
+    max-width: 400px;
+    font-size: 2rem;
+    margin: auto;
+
+}
+
+.playerList ul {
+    padding-inline-start: 0;
+}
+
+.playerList li {
+    list-style: none;
+}
+
+.playerListItem {
+    display: grid;
+    grid-template: none / 30px minmax(150px, 1fr) 30px;
+    align-items: center;
+    justify-items: left;
+    grid-gap: 1rem;
+    margin-bottom: 0.5rem;
+
+}
+
+.playerName {
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: -webkit-fill-available;
+}
+
+.playerStatus {
+
+}
+
+.playerStatusButton {
+  display: flex;
+    justify-content: center;
+}

@@ -10,8 +10,9 @@ import {gameStateReducer} from "./GameStateReducer";
 import {playersReducer} from "./PlayersReducer";
 import {countdownReducer} from "./CountdownReducer";
 import {StartGame} from "./components/StartGame/StartGame";
-import {Lobby} from "./Lobby";
+import {Lobby} from "./components/Lobby/Lobby";
 import {GameResults} from "./GameResults";
+import styles from './styles.module.css'
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -232,72 +233,120 @@ export function Home2() {
     }
     const onSkip = (event: any) => onGuess(event, true)
 
+    const cols = new Map<string, string>([
+        ['orange', '#f08100'],
+        ['red', '#c80c12'],
+        ['pink', '#e6127d'],
+        ['purple', '#792a81'],
+        ['blue', '#0086c8'],
+        ['green', '#42a338'],
+        ['yellow', '#f5ae07'],
+    ])
 
+    const getRandomColour = (iterable: any) => iterable.get([...iterable.keys()][Math.floor(Math.random() * iterable.size)])
+
+    const color = () => getRandomColour(cols);
     return (
-        <div>
-            THE ONE CLONE game
+        <div className={"home"}>
+            <div className='header'>
+                <div className={styles.title}>
+                    <span style={{color: color()}}>T</span><span style={{color: color()}}>H</span><span
+                    style={{color: color()}}>E </span>
+                    <span style={{color: color()}}>O</span><span style={{color: color()}}>N</span><span
+                    style={{color: color()}}>L</span><span style={{color: color()}}>Y </span>
+                    <span style={{color: color()}}>O</span><span style={{color: color()}}>N</span><span
+                    style={{color: color()}}>E </span>
+                    <span style={{color: color()}}>C</span><span style={{color: color()}}>L</span><span
+                    style={{color: color()}}>O</span><span style={{color: color()}}>N</span><span
+                    style={{color: color()}}>E </span>
+                    <span style={{color: color()}}>G</span><span style={{color: color()}}>A</span><span
+                    style={{color: color()}}>M</span><span style={{color: color()}}>E</span>
+                </div>
+            </div>
             {!socket &&
-            <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom}/>
-            }
-            {inLobby && <Lobby players={players} me={me} onReady={onReady}>
-                {results && results.length > 0 ? <GameResults results={results}/> : null}
-            </Lobby>}
-
-            {!inLobby && rounds.length > 0 &&
-            <div>
-                <div>
-                    Rounds: {maxTurn}/{rounds[currentRound].currentTurn}
-                    Points:{rounds[currentRound].points}
-                </div>
-                <div>
-                    Countdown: {countdown}
-                </div>
-
-                {me && me.isGuessing &&
-                <p>I'm guessing</p>
-                }
-                <div>
-                    <p>Current Round: {currentRound}</p>
-                    <p>Current Turn: {rounds[currentRound].currentTurn}</p>
-                </div>
-
-                {me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&
-                <div>
-                    <p>I'm hinting here is the secret
-                        word: {rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}</p>
-                    <div>
-                        <input value={hint} onChange={onInputChange} name={"hint"} type="text"/>
-                        <button onClick={onHint}>Hint!</button>
-                    </div>
-                    {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&
-                    <div>
-                        Hints:
-                        {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) => <li
-                            key={index}>{hint.hint} {hint.duplicate ? <span>Duplicate</span> : null}</li>)}
-                    </div>}
-
-                </div>
-                }
-                {me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&
-                <div>
-                    {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&
-                    <div>
-                        <div>
-                            Hints:
-                            {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) => <li
-                                key={index}>{hint.hint} {hint.duplicate ? <span>Duplicate</span> : null}</li>)}
-                        </div>
-                        <div>
-                            <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>
-                            <button onClick={onGuess}>Guess!</button>
-                        </div>
-                    </div>
-                    }
-
-                </div>
-                }
+            <div className="init">
+                <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom} roomId={query.get("room-id")}/>
             </div>
             }
+            {socket && inLobby &&
+                <div className="lobby">
+                    <Lobby players={players} me={me} onReady={onReady}>
+                        {results && results.length > 0 ? <GameResults results={results}/> : null}
+                    </Lobby>
+                </div>
+            }
+            {false &&
+            <div className="game">
+                <div className='header'>THE ONE CLONE game</div>
+                <div className="playerInfo">Playerinfo</div>
+                <div className="playArea">PlayArea</div>
+                <div className="gameStatus">GameStatus</div>
+                <div className="timer">Timer</div>
+
+                {/*{false && <div>*/}
+
+                {/*    {!inLobby && rounds.length > 0 &&*/}
+                {/*    <div>*/}
+                {/*        <div>*/}
+                {/*            Rounds: {maxTurn}/{rounds[currentRound].currentTurn}*/}
+                {/*            Points:{rounds[currentRound].points}*/}
+                {/*        </div>*/}
+                {/*        <div>*/}
+                {/*            Countdown: {countdown}*/}
+                {/*        </div>*/}
+
+                {/*        {me && me.isGuessing &&*/}
+                {/*        <p>I'm guessing</p>*/}
+                {/*        }*/}
+                {/*        <div>*/}
+                {/*            <p>Current Round: {currentRound}</p>*/}
+                {/*            <p>Current Turn: {rounds[currentRound].currentTurn}</p>*/}
+                {/*        </div>*/}
+
+                {/*        {me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
+                {/*        <div>*/}
+                {/*            <p>I'm hinting here is the secret*/}
+                {/*                word: {rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}</p>*/}
+                {/*            <div>*/}
+                {/*                <input value={hint} onChange={onInputChange} name={"hint"} type="text"/>*/}
+                {/*                <button onClick={onHint}>Hint!</button>*/}
+                {/*            </div>*/}
+                {/*            {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&*/}
+                {/*            <div>*/}
+                {/*                Hints:*/}
+                {/*                {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) =>*/}
+                {/*                    <li*/}
+                {/*                        key={index}>{hint.hint} {hint.duplicate ? <span>Duplicate</span> : null}</li>)}*/}
+                {/*            </div>}*/}
+
+                {/*        </div>*/}
+                {/*        }*/}
+                {/*        {me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
+                {/*        <div>*/}
+                {/*            {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&*/}
+                {/*            <div>*/}
+                {/*                <div>*/}
+                {/*                    Hints:*/}
+                {/*                    {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) =>*/}
+                {/*                        <li*/}
+                {/*                            key={index}>{hint.hint} {hint.duplicate ?*/}
+                {/*                            <span>Duplicate</span> : null}</li>)}*/}
+                {/*                </div>*/}
+                {/*                <div>*/}
+                {/*                    <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>*/}
+                {/*                    <button onClick={onGuess}>Guess!</button>*/}
+                {/*                </div>*/}
+                {/*            </div>*/}
+                {/*            }*/}
+
+                {/*        </div>*/}
+                {/*        }*/}
+                {/*    </div>*/}
+                {/*    }*/}
+                {/*</div>}*/}
+
+            </div>}
         </div>
+
     )
 }

@@ -1,5 +1,7 @@
 .App {
   text-align: center;
+  margin: auto;
+  min-height: 100vh;
 }
 
 .App-logo {
@@ -34,6 +36,81 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+
+.init {
+  /*min-height: 100vh;*/
+  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+}
+
+.game {
+  /*min-height: 100vh;*/
+  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(100px, .4fr) 1fr;
+  grid-template-rows: 4rem 3rem auto auto;
+  grid-template-areas:
+    "header header"
+    "timer gamestatus"
+    "playarea playarea"
+    "playerinfo playerinfo";
+}
+
+.header {
+  grid-area: header;
+}
+
+.playerInfo {
+  grid-area: playerinfo;
+}
+
+.playArea {
+  grid-area: playarea;
+}
+
+.gameStatus {
+  grid-area: gamestatus;
+}
+
+.timer {
+  grid-area: timer;
+}
+
+@media only screen and (min-width: 600px) {
+  .game {
+    display: grid;
+    grid-template-columns: 200px 3fr;
+    grid-template-rows: 4rem 3rem auto auto;
+    grid-template-areas:
+    "header header"
+    "timer gamestatus"
+    "playerinfo playarea"
+    "playerinfo playarea";
+
+  }
+
+}
+
+
+@media only screen and (min-width: 992px) {
+  .game {
+    min-height: 80vh;
+    width: 70%;
+    margin: auto;
+
+    display: grid;
+    grid-template-columns: 200px 3fr;
+    grid-template-rows: 4rem 3rem auto auto;
+    grid-template-areas:
+    "header header"
+    "timer gamestatus"
+    "playerinfo playarea"
+    "playerinfo playarea";
   }
 }
 

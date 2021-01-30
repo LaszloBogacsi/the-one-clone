@@ -1,6 +1,10 @@
-html, body {
-  height: 100%
+html {
+  /*height: 100%;*/
+  /*height: 100vh;*/
+  width: 100%
+  /*width: 100vh*/
 }
+
 body {
   margin: 0;
   font-family: 'cafeteriaregular', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -11,9 +15,9 @@ body {
   background: rgb(251, 250, 244);
   background: url("./img/taches.png"), url("./img/triangles.png"), radial-gradient(circle, rgba(251,250,244,1) 0%, rgba(226,211,173,1) 100%);
   background-repeat: no-repeat;
-  background-size: 100%;
+  background-size: cover;
   --gameAccentOrange: #f08100;
-  --gamaeAccentRed: #c80c12;
+  --gameAccentRed: #c80c12;
   --gameAccentPink: #e6127d;
   --gameAccentPurple: #792a81;
   --gameAccentBlue: #0086c8;

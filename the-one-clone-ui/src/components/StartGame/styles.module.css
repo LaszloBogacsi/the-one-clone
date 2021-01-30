@@ -9,12 +9,12 @@
 .playerNameInput {
     padding: 1rem;
     border: 1px solid white;
-    font-size: 5rem;
+    font-size: calc(3rem + 2vw);
     text-align: center;
     border-radius: 2px;
     font-family: cafeteriaregular;
     transform: skew(2deg, -0.5deg);
-
+    width: 100%;
 }
 
 .playerNameInputWrapper {
@@ -24,5 +24,34 @@
     width: fit-content;
     transform: skew(-1deg, 0.3deg);
     margin-bottom: 2rem;
+}
 
+.wrapper {
+    min-width: 13rem;
+    background-color: var(--backgroundDark);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 2rem;
+}
+
+.wrapper h3 {
+    margin-top: 0;
+}
+
+.selectors {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.selectors label {
+    font-size: 1.4rem;
+}
+
+.selectors select {
+    width: 4rem;
+    text-align: center;
+    text-align-last: center;
+    -moz-text-align-last: center;
+    border-radius: 5px;
 }
