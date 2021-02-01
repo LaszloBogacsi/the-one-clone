@@ -1,4 +1,4 @@
-import {GameState} from "./GameState";
+import {GameState} from "../domain/GameState";
 import {GameStateAction} from "./GameStateAction";
 
 export function gameStateReducer(state: GameState, action: GameStateAction): GameState {

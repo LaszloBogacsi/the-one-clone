@@ -1,7 +1,7 @@
-import {GameState} from "./GameState";
-import {Round} from "./Round";
-import {Turn} from "./Turn";
-import {Hint} from "./Hint";
+import {GameState} from "../domain/GameState";
+import {Round} from "../domain/Round";
+import {Turn} from "../domain/Turn";
+import {Hint} from "../domain/Hint";
 
 export type GameStateAction =
     | { type: 'setGameState', payload: GameState }

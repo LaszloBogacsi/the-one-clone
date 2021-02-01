@@ -1,6 +1,6 @@
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import React, {ReactElement} from "react";
-import {Player} from "../../Player";
+import {Player} from "../../domain/Player";
 import {faCheck, faTimes, faUser} from "@fortawesome/free-solid-svg-icons";
 import styles from './styles.module.css'
 import Button from "../shared/Button/Button";

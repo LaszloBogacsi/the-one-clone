@@ -1,0 +1,9 @@
+.gameStatus {
+    display: grid;
+    grid-template: none / 1fr 1fr 1fr;
+
+}
+
+.current {
+    font-weight: bold;
+}

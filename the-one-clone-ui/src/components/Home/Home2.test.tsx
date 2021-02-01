@@ -1,10 +1,10 @@
 import React from 'react';
-import {Hint} from "./Hint";
-import {Turn} from "./Turn";
-import {Round} from "./Round";
-import {GameState} from "./GameState";
-import {gameStateReducer} from "./GameStateReducer";
-import {GameStateAction} from "./GameStateAction";
+import {Hint} from "../../domain/Hint";
+import {Turn} from "../../domain/Turn";
+import {Round} from "../../domain/Round";
+import {GameState} from "../../domain/GameState";
+import {gameStateReducer} from "../../reducers/GameStateReducer";
+import {GameStateAction} from "../../reducers/GameStateAction";
 
 test('can add hints to a turn in a round', () => {
     const hintsExpected: Hint[] = [

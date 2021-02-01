@@ -1,18 +1,22 @@
 import React, {ChangeEvent, useEffect, useReducer, useState} from "react";
 import io, {Socket} from "socket.io-client";
 import {useLocation} from "react-router-dom";
-import {Player} from "./Player";
-import {Hint} from "./Hint";
-import {Turn} from "./Turn";
-import {Round} from "./Round";
-import {GameState} from "./GameState";
-import {gameStateReducer} from "./GameStateReducer";
-import {playersReducer} from "./PlayersReducer";
-import {countdownReducer} from "./CountdownReducer";
-import {StartGame} from "./components/StartGame/StartGame";
-import {Lobby} from "./components/Lobby/Lobby";
-import {GameResults} from "./GameResults";
+import {Player} from "../../domain/Player";
+import {Hint} from "../../domain/Hint";
+import {Turn} from "../../domain/Turn";
+import {Round} from "../../domain/Round";
+import {GameState} from "../../domain/GameState";
+import {gameStateReducer} from "../../reducers/GameStateReducer";
+import {playersReducer} from "../../reducers/PlayersReducer";
+import {countdownReducer} from "../../reducers/CountdownReducer";
+import {StartGame} from "../StartGame/StartGame";
+import {Lobby} from "../Lobby/Lobby";
+import {GameResults} from "../GameResults/GameResults";
 import styles from './styles.module.css'
+import PlayerInfo from "../PlayerInfo/PlayerInfo";
+import GameStatus from "../GameStatus/GameStatus";
+import Timer from "../Timer/Timer";
+import Hinter from "../Hinter/Hinter";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -26,7 +30,6 @@ export function Home2() {
     const [me, setMe] = useState<Player>();
 
     // INPUTS
-    const [hint, setHint] = useState<string>();
     const [hintSecond, setHintSecond] = useState<string>();
     const [guess, setGuess] = useState<string>();
 
@@ -197,10 +200,6 @@ export function Home2() {
 
     const onInputChange = (event: ChangeEvent<HTMLInputElement>) => {
         switch (event.target.name) {
-            case "hint": {
-                setHint(event.target.value || "");
-                break;
-            }
             case "hintSecond": {
                 setHintSecond(event.target.value || "");
                 break;
@@ -218,10 +217,7 @@ export function Home2() {
 
     const onReady = () => socket!.emit('on-ready', {ready: !me?.isReady})
 
-    const onHint = () => {
-        socket!.emit('on-player-hint-submit', {hint})
-        setHint("")
-    }
+    const onHint = (hint: string) => socket!.emit('on-player-hint-submit', {hint})
     const onHintSecond = () => {
         socket!.emit('on-player-hint-submit', {hint: hintSecond})
         setHintSecond("")
@@ -246,8 +242,52 @@ export function Home2() {
     const getRandomColour = (iterable: any) => iterable.get([...iterable.keys()][Math.floor(Math.random() * iterable.size)])
 
     const color = () => getRandomColour(cols);
+    const mockHints: Hint[] = [
+        {duplicate: false, hint: "another hint", player: "1234"},
+        {duplicate: false, hint: "a hint", player: "2345"},
+    ]
+    const mockTurn: Turn = {
+        guess: "", hints: mockHints, reveal: false, secretWord: "Secret Word"
+    }
+    const mockPlayers: Player[] = [
+        {id: "1234", isAdmin: true, isGuessing: false, isMe: false, isReady: true, name: "Player Hinter Admin"},
+        {id: "2345", isAdmin: false, isGuessing: false, isMe: true, isReady: true, name: "Player Hinter 1"},
+        {id: "3456", isAdmin: false, isGuessing: false, isMe: false, isReady: true, name: "PLayer Hinter 2"},
+        {id: "3456", isAdmin: false, isGuessing: true, isMe: false, isReady: true, name: "Player Guesser"},
+    ]
+
+    const mockGameStatusProps = {
+        currentRound: 2,
+        maxRounds: 5,
+        currentTurn: 5,
+        maxTurns: 13,
+        points: 4
+    }
+
+    const mockHinterProps = {
+        secretWord: "Big Secret Word",
+        onHint: (e: any, hint: string) => console.log(hint),
+        reveal: true,
+        hints: mockHints
+    }
+
+    const mockMe: Player = {
+        id: "playerMe1",
+        isAdmin: false,
+        isGuessing: false,
+        isMe: true,
+        isReady: true,
+        name: "Me the Great"
+    }
+
+    const mockRounds: Round[] = [
+        {currentTurn: 3, points: 2, turns: [mockTurn]}
+        ]
+
+
+
     return (
-        <div className={"home"}>
+        <div className={`home ${styles.home}`}>
             <div className='header'>
                 <div className={styles.title}>
                     <span style={{color: color()}}>T</span><span style={{color: color()}}>H</span><span
@@ -263,89 +303,98 @@ export function Home2() {
                     style={{color: color()}}>M</span><span style={{color: color()}}>E</span>
                 </div>
             </div>
-            {!socket &&
-            <div className="init">
-                <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom} roomId={query.get("room-id")}/>
-            </div>
-            }
-            {socket && inLobby &&
-                <div className="lobby">
-                    <Lobby players={players} me={me} onReady={onReady}>
-                        {results && results.length > 0 ? <GameResults results={results}/> : null}
-                    </Lobby>
-                </div>
-            }
-            {false &&
+            {/*{!socket &&*/}
+            {/*<div className="init">*/}
+            {/*    <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom} roomId={query.get("room-id")}/>*/}
+            {/*</div>*/}
+            {/*}*/}
+            {/*{socket && inLobby &&*/}
+            {/*    <div className="lobby">*/}
+            {/*        <Lobby players={players} me={me} onReady={onReady}>*/}
+            {/*            {results && results.length > 0 ? <GameResults results={results}/> : null}*/}
+            {/*        </Lobby>*/}
+            {/*    </div>*/}
+            {/*}*/}
+            {/*{false &&*/}
             <div className="game">
-                <div className='header'>THE ONE CLONE game</div>
-                <div className="playerInfo">Playerinfo</div>
-                <div className="playArea">PlayArea</div>
-                <div className="gameStatus">GameStatus</div>
-                <div className="timer">Timer</div>
+                <div className="playerInfo">
+                    <PlayerInfo
+                        // players={players}
+                        players={mockPlayers}
+                        // turn={rounds[currentRound].turns[rounds[currentRound].currentTurn]}
+                        turn={mockTurn}
+                    />
+                </div>
+                <div className="playArea">
+                    {/*{!inLobby && rounds.length > 0 &&*/}
+                    {!false && mockRounds.length > 0 &&
+                    <div>
 
-                {/*{false && <div>*/}
+                        {/*{me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
+                        {mockMe && !mockMe.isGuessing && mockRounds.length && mockRounds[0].turns.length > 0 &&
+                        // <Hinter secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
+                        //       onHint={onHint}
+                        //       reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
+                        //       hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}/>
+                        <Hinter {...mockHinterProps}/>
 
-                {/*    {!inLobby && rounds.length > 0 &&*/}
-                {/*    <div>*/}
-                {/*        <div>*/}
-                {/*            Rounds: {maxTurn}/{rounds[currentRound].currentTurn}*/}
-                {/*            Points:{rounds[currentRound].points}*/}
-                {/*        </div>*/}
-                {/*        <div>*/}
-                {/*            Countdown: {countdown}*/}
-                {/*        </div>*/}
+                        }
+                    </div>
+                    }
+                </div>
+                <div className="gameStatus">
+                    <GameStatus
+                        // currentRound={currentRound}
+                        //         currentTurn={rounds[currentRound].currentTurn}
+                        //         maxRounds={maxRound}
+                        //         maxTurns={maxTurn}
+                        //         points={rounds[currentRound].points}
+                        {...mockGameStatusProps}/>
+                </div>
+                <div className="timer">
+                    <Timer timeout={13}/>
+                    {/*<Timer timeout={countdown}/>*/}
+                </div>
 
-                {/*        {me && me.isGuessing &&*/}
-                {/*        <p>I'm guessing</p>*/}
-                {/*        }*/}
-                {/*        <div>*/}
-                {/*            <p>Current Round: {currentRound}</p>*/}
-                {/*            <p>Current Turn: {rounds[currentRound].currentTurn}</p>*/}
-                {/*        </div>*/}
+                {<div>
 
-                {/*        {me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
-                {/*        <div>*/}
-                {/*            <p>I'm hinting here is the secret*/}
-                {/*                word: {rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}</p>*/}
-                {/*            <div>*/}
-                {/*                <input value={hint} onChange={onInputChange} name={"hint"} type="text"/>*/}
-                {/*                <button onClick={onHint}>Hint!</button>*/}
-                {/*            </div>*/}
-                {/*            {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&*/}
-                {/*            <div>*/}
-                {/*                Hints:*/}
-                {/*                {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) =>*/}
-                {/*                    <li*/}
-                {/*                        key={index}>{hint.hint} {hint.duplicate ? <span>Duplicate</span> : null}</li>)}*/}
-                {/*            </div>}*/}
+                    {!inLobby && rounds.length > 0 &&
+                    <div>
 
-                {/*        </div>*/}
-                {/*        }*/}
-                {/*        {me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
-                {/*        <div>*/}
-                {/*            {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&*/}
-                {/*            <div>*/}
-                {/*                <div>*/}
-                {/*                    Hints:*/}
-                {/*                    {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) =>*/}
-                {/*                        <li*/}
-                {/*                            key={index}>{hint.hint} {hint.duplicate ?*/}
-                {/*                            <span>Duplicate</span> : null}</li>)}*/}
-                {/*                </div>*/}
-                {/*                <div>*/}
-                {/*                    <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>*/}
-                {/*                    <button onClick={onGuess}>Guess!</button>*/}
-                {/*                </div>*/}
-                {/*            </div>*/}
-                {/*            }*/}
+                        {/*{me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
+                        {/*// <Hinter secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}*/}
+                        {/*//       onHint={onHint}*/}
+                        {/*//       reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}*/}
+                        {/*//       hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}/>*/}
+                        {/*    <Hinter {...mockHinterProps}/>*/}
 
-                {/*        </div>*/}
-                {/*        }*/}
-                {/*    </div>*/}
-                {/*    }*/}
-                {/*</div>}*/}
+                        {/*}*/}
+                        {me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&
+                        <div>
+                            {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&
+                            <div>
+                                <div>
+                                    Hints:
+                                    {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) =>
+                                        <li
+                                            key={index}>{hint.hint} {hint.duplicate ?
+                                            <span>Duplicate</span> : null}</li>)}
+                                </div>
+                                <div>
+                                    <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>
+                                    <button onClick={onGuess}>Guess!</button>
+                                </div>
+                            </div>
+                            }
 
-            </div>}
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>}
+
+            </div>
+
         </div>
 
     )

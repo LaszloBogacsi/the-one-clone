@@ -1,4 +1,4 @@
-import {Player} from "./Player";
+import {Player} from "../domain/Player";
 import {PlayerAction} from "./PlayerAction";
 
 export const playersReducer = (state: Player[], action: PlayerAction): Player[] => {

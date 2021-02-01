@@ -84,7 +84,7 @@
 @media only screen and (min-width: 600px) {
   .game {
     display: grid;
-    grid-template-columns: 200px 3fr;
+    grid-template-columns: auto 3fr;
     grid-template-rows: 4rem 3rem auto auto;
     grid-template-areas:
     "header header"
@@ -99,12 +99,12 @@
 
 @media only screen and (min-width: 992px) {
   .game {
-    min-height: 80vh;
+    /*min-height: 80vh;*/
     width: 70%;
     margin: auto;
 
     display: grid;
-    grid-template-columns: 200px 3fr;
+    grid-template-columns: auto 3fr;
     grid-template-rows: 4rem 3rem auto auto;
     grid-template-areas:
     "header header"

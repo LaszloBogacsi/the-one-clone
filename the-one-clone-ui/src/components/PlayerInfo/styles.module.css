@@ -1,28 +1,12 @@
-.lobby {
-    padding: 0 2rem;
-
+.playerInfo {
+padding: 2rem;
 }
 
-.ready {
-    color: var(--gameAccentGreen);
-}
-
-.notReady {
-    color: var(--gameAccentRed);
-}
-
-.playerList {
-    max-width: 400px;
-    font-size: 2rem;
-    margin: auto;
-
-}
-
-.playerList ul {
+.playerInfo ul {
     padding-inline-start: 0;
 }
 
-.playerList li {
+.playerInfo ul li {
     list-style: none;
 }
 
@@ -44,11 +28,6 @@
     width: -webkit-fill-available;
 }
 
-.playerStatus {
-
-}
-
-.playerStatusButton {
-    display: flex;
-    justify-content: center;
+.ready {
+    color: var(--gameAccentGreen);
 }

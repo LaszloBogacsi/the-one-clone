@@ -1,0 +1,35 @@
+.hinter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+}
+
+.secretWord {
+    font-size: 2rem;
+    font-family: cafeteriabold;
+}
+
+.hintInput input{
+    background-color: var(--backgroundLight);
+    box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+    transform: skew(2deg, 1deg);
+    font-size: calc(3rem + 2vw);
+    border: 1px solid transparent;
+    text-align: center;
+    border-radius: 2px;
+    width: 100%;
+    padding: 1rem;
+
+
+}
+.hintInput {
+    padding: 6px;
+    margin-bottom: 1rem;
+    background-color: white;
+    box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+    transform: skew(-1deg, -1deg);
+    width: fit-content;
+    border-radius: 8px;
+
+}

@@ -1,4 +1,4 @@
-import {Player} from "./Player";
+import {Player} from "../domain/Player";
 
 export type PlayerAction =
     | { type: 'updateGuesser', payload: { id: string, name: string } }
