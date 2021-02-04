@@ -18,9 +18,12 @@ export default (props: HinterProps) => {
             <p className={styles.secretWord}>{secretWord}</p>
             <div className={styles.hintInput}>
                 <input value={hint}
+                       autoComplete={"off"}
                        onChange={onInputChange}
-                       name={"hint"} type="search"
-                       placeholder={"Hint Me"} size={20}/>
+                       name={"hint"}
+                       type="search"
+                       placeholder={"Hint Me"}
+                       size={20}/>
             </div>
             <Button onClick={(e) => onHint(e, hint)}>Hint!</Button>
             {reveal &&

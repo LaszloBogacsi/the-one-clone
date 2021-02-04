@@ -17,6 +17,9 @@ import PlayerInfo from "../PlayerInfo/PlayerInfo";
 import GameStatus from "../GameStatus/GameStatus";
 import Timer from "../Timer/Timer";
 import Hinter from "../Hinter/Hinter";
+import Guesser from "../Guesser/Guesser";
+import ResultsOverlay from "../shared/ResultsOverlay/ResultsOverlay";
+import TurnResult from "../TurnResult/TurnResult";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -223,11 +226,11 @@ export function Home2() {
         setHintSecond("")
     }
 
-    const onGuess = (event: any, skip = false) => {
+    const onGuess = (event: any, guess: string, skip = false) => {
         socket!.emit('on-player-guess-submit', {guess, skip})
         setGuess("")
     }
-    const onSkip = (event: any) => onGuess(event, true)
+    const onSkip = (event: any) => onGuess(event, "", true)
 
     const cols = new Map<string, string>([
         ['orange', '#f08100'],
@@ -247,7 +250,7 @@ export function Home2() {
         {duplicate: false, hint: "a hint", player: "2345"},
     ]
     const mockTurn: Turn = {
-        guess: "", hints: mockHints, reveal: false, secretWord: "Secret Word"
+        guess: "some guess", hints: mockHints, reveal: true, secretWord: "Secret Word", result: "success"
     }
     const mockPlayers: Player[] = [
         {id: "1234", isAdmin: true, isGuessing: false, isMe: false, isReady: true, name: "Player Hinter Admin"},
@@ -271,10 +274,17 @@ export function Home2() {
         hints: mockHints
     }
 
+    const mockGuesserProps = {
+        onGuess: (e: any, hint: string) => console.log(hint),
+        onSkip: (e: any) => console.log("SKIPPING"),
+        reveal: true,
+        hints: mockHints
+    }
+
     const mockMe: Player = {
         id: "playerMe1",
         isAdmin: false,
-        isGuessing: false,
+        isGuessing: true,
         isMe: true,
         isReady: true,
         name: "Me the Great"
@@ -282,8 +292,7 @@ export function Home2() {
 
     const mockRounds: Round[] = [
         {currentTurn: 3, points: 2, turns: [mockTurn]}
-        ]
-
+    ]
 
 
     return (
@@ -328,18 +337,40 @@ export function Home2() {
                 <div className="playArea">
                     {/*{!inLobby && rounds.length > 0 &&*/}
                     {!false && mockRounds.length > 0 &&
-                    <div>
-
+                    <div className={styles.playArea}>
                         {/*{me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
                         {mockMe && !mockMe.isGuessing && mockRounds.length && mockRounds[0].turns.length > 0 &&
-                        // <Hinter secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
-                        //       onHint={onHint}
-                        //       reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
-                        //       hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}/>
-                        <Hinter {...mockHinterProps}/>
+                        <Hinter
+                            // secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
+                            //       onHint={onHint}
+                            //       reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
+                            //       hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
+                            {...mockHinterProps}
+                        />
+                        }
 
+                        {/*{me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
+                        {mockMe && mockMe.isGuessing && mockRounds.length && mockRounds[0].turns.length > 0 &&
+                        <Guesser
+                            // reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
+                            // hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
+                            // onGuess={onGuess}
+                            // onSkip={onSkip}
+                            {...mockGuesserProps}
+                        />
+                        }
+                        {/*{rounds[currentRound].turns[rounds[currentRound].currentTurn].result &&*/}
+                        {mockRounds.length && mockRounds[0].turns[0].result &&
+                        <ResultsOverlay>
+                            <TurnResult
+                                // turn={rounds[currentRound].turns[rounds[currentRound].currentTurn]}
+                                player={mockPlayers.find(player => player.isGuessing)!}
+                                turn={mockTurn}
+                            />
+                        </ResultsOverlay>
                         }
                     </div>
+
                     }
                 </div>
                 <div className="gameStatus">
@@ -352,49 +383,12 @@ export function Home2() {
                         {...mockGameStatusProps}/>
                 </div>
                 <div className="timer">
-                    <Timer timeout={13}/>
-                    {/*<Timer timeout={countdown}/>*/}
+                    <Timer
+                        timeout={13}
+                        // timeout={countdown}
+                    />
                 </div>
-
-                {<div>
-
-                    {!inLobby && rounds.length > 0 &&
-                    <div>
-
-                        {/*{me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
-                        {/*// <Hinter secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}*/}
-                        {/*//       onHint={onHint}*/}
-                        {/*//       reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}*/}
-                        {/*//       hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}/>*/}
-                        {/*    <Hinter {...mockHinterProps}/>*/}
-
-                        {/*}*/}
-                        {me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&
-                        <div>
-                            {rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal &&
-                            <div>
-                                <div>
-                                    Hints:
-                                    {rounds[currentRound].turns[rounds[currentRound].currentTurn].hints.map((hint, index) =>
-                                        <li
-                                            key={index}>{hint.hint} {hint.duplicate ?
-                                            <span>Duplicate</span> : null}</li>)}
-                                </div>
-                                <div>
-                                    <input value={guess} onChange={onInputChange} name={"guess"} type="text"/>
-                                    <button onClick={onGuess}>Guess!</button>
-                                </div>
-                            </div>
-                            }
-
-                        </div>
-                        }
-                    </div>
-                    }
-                </div>}
-
             </div>
-
         </div>
 
     )

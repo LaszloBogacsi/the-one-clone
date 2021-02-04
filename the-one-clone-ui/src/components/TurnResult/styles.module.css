@@ -1,0 +1,17 @@
+.turnResults {
+    color: white;
+}
+
+.correct {
+    color: var(--gameAccentGreen);
+}
+
+.incorrect {
+    color: var(--gameAccentRed);
+}
+
+.highlight {
+    font-weight: bold;
+    font-size: 2rem;
+}
+

@@ -20,9 +20,6 @@
 
 .playerList ul {
     padding-inline-start: 0;
-}
-
-.playerList li {
     list-style: none;
 }
 
