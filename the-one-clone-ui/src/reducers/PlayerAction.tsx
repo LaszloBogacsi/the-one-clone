@@ -6,3 +6,4 @@ export type PlayerAction =
     | { type: 'updatePlayerIsReady', payload: { id: string, isReady: boolean } }
     | { type: 'removePlayer', payload: Player }
     | { type: 'updateAllPlayers', payload: Player[] }
+    | { type: 'assignColor', payload: string[] }

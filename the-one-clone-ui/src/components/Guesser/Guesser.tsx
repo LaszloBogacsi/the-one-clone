@@ -6,15 +6,17 @@ import {faCheck} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCommentDots} from "@fortawesome/free-regular-svg-icons";
 import HintItems from "../shared/HintItems/HintItems";
+import {Player} from "../../domain/Player";
 interface GuesserProps {
     onGuess: (event: MouseEvent<HTMLButtonElement>, hint: string) => void;
     onSkip: (event: MouseEvent<HTMLButtonElement>) => void;
     reveal: boolean;
-    hints: Hint[]
+    hints: Hint[];
+    me: Player;
 }
 
 export default (props: GuesserProps) => {
-    const {onGuess, onSkip, reveal, hints} = props;
+    const {onGuess, onSkip, reveal, hints, me} = props;
     const [guess, setGuess] = useState<string>("");
     const [submitted, setSubmitted] = useState(false)
     const onInputChange = (event: ChangeEvent<HTMLInputElement>) => setGuess(event.target.value || "")
@@ -36,6 +38,7 @@ export default (props: GuesserProps) => {
                        placeholder={"Guess Me"}
                        size={20}
                        disabled={submitted}
+                       className={me.color}
                 />
             </div>
             <Button disabled={submitted} onClick={(e) => onButtonPress(() => onGuess(e, guess))}>Guess!</Button>

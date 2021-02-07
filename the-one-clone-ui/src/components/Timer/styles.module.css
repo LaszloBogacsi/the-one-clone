@@ -1,7 +1,27 @@
 .timer {
-
+/*display: flex;*/
+/*    justify-content: space-between;*/
 }
 
 .timer svg {
     margin-right: 0.75rem;
+}
+
+.timeout {
+    display: inline-block;
+}
+
+.animate {
+    animation: scaleInOut 0.5s infinite 1.2s alternate;
+}
+
+@keyframes scaleInOut {
+    0% {
+        transform: scale(1, 1)
+    }
+
+    100% {
+        transform: scale(2, 2);
+        color: var(--gameAccentRed);
+    }
 }

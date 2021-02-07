@@ -1,0 +1,27 @@
+:global(.orange) {
+    color: var(--gameAccentOrange);
+}
+
+:global(.red) {
+    color: var(--gameAccentRed);
+}
+
+:global(.pink) {
+    color: var(--gameAccentPink);
+}
+
+:global(.purple) {
+    color: var(--gameAccentPurple);
+}
+
+:global(.blue) {
+    color: var(--gameAccentBlue);
+}
+
+:global(.green) {
+    color: var(--gameAccentGreen);
+}
+
+:global(.yellow) {
+    color: var(--gameAccentYellow);
+}

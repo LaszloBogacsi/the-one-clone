@@ -1,0 +1,13 @@
+.roundResults {
+    color: white;
+}
+
+.correct {
+    color: var(--gameAccentGreen);
+}
+
+.highlight {
+    font-weight: bold;
+    font-size: 2rem;
+}
+

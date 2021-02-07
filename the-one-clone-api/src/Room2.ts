@@ -122,12 +122,15 @@ class Room2 {
     }
 
     playerJoinedLobby() {
+        console.info(`[SHOWALLPLAYERS] Client ${this.socket.id} ${this.store.clients.length}`);
+
+        this.socket.emit('show-all-players', {players: this.store.clients})
         this.io.to(this.roomId).emit('player-joined-lobby', {playerJoined: this.store.clients.find((me: Player) => me.id === this.socket.id)})
     }
 
     isReady() {
         this.socket.on('on-ready', this._onReadyHandler.bind(this))
-        this.socket.on('on-player-hint-submit', (data: {hint: string}) => {
+        this.socket.on('on-player-hint-submit', (data: { hint: string }) => {
             const {gameState} = this.store;
             const {turns, currentTurn} = gameState.rounds[gameState.currentRound];
             const {hints} = turns[currentTurn];
@@ -144,7 +147,7 @@ class Room2 {
                 this._hintToGuessTransition()
             }
         })
-        this.socket.on('on-player-guess-submit', (data: {guess: string}) => {
+        this.socket.on('on-player-guess-submit', (data: { guess: string }) => {
             const {gameState}: { gameState: GameState } = this.store;
             const {rounds, currentRound} = gameState;
             const round: Round = rounds[currentRound]
@@ -238,13 +241,25 @@ class Room2 {
         console.info(`[CREATE] All players ready, Game starts in ${this.roomId} room`);
     }
 
+    _getEventTiming(currentRound: number) {
+        return function (event: string) {
+            const timings: Map<string, number> = new Map([["newRound", 2000], ["announceRoles", 4000], ["newTurn", 6000]])
+            const timings2: Map<string, number> = new Map([["roundEnd", 2000], ["newRound", 4000], ["announceRoles", 6000], ["newTurn", 8000]])
+            return currentRound > -1 ? timings.get(event) : timings2.get(event);
+        }
+    }
+
     _prepAndStartNewTurn() {
         const {clients, gameState} = this.store;
         const {rounds, currentRound, gameConfig} = gameState;
         const round: Round = rounds[currentRound];
+        const timingFor = this._getEventTiming(currentRound);
         // start new round and announce roles
         if (currentRound === -1 || gameConfig.maxTurn <= round.currentTurn) {
-            setTimeout(this._startNewRound.bind(this), 2000)
+            if (currentRound > -1) {
+                setTimeout(this._roundEnd.bind(this), timingFor("roundEnd"))
+            }
+            setTimeout(this._startNewRound.bind(this), timingFor("newRound"))
         }
 
         const announceRoles = () => {
@@ -259,10 +274,17 @@ class Room2 {
             console.info(`[Roles] announcing guesser is ${guesser.playerName}, in ${this.roomId} room`);
         }
 
-        setTimeout(announceRoles, 4000)
-        setTimeout(this._startNewTurn.bind(this), 6000)
+        setTimeout(announceRoles, timingFor("announceRoles"))
+        setTimeout(this._startNewTurn.bind(this), timingFor("newTurn"))
     }
 
+    _roundEnd() {
+        this._emitRoundEnd(this.store.gameState.currentRound)
+    }
+
+    _emitRoundEnd(currentRound: number) {
+        this.io.to(this.roomId).emit('end-round', {currentRound})
+    }
     _startNewRound() {
         const round = new Round();
         this.store.gameState.addRound(round)
@@ -359,12 +381,14 @@ class Room2 {
     _guessToNewTurnTransition() {
         this._clearTimeouts()
         this._revealTurnResult()
-        !this._isGameOver() ? this._prepAndStartNewTurn() : this._gameOver()
+        !this._isGameOver() ? this._prepAndStartNewTurn() : setTimeout(this._gameOver, 2000)
     }
 
-    _isGameOver (): boolean {
-        const {currentRound, gameConfig} = this.store.gameState;
-        return gameConfig.maxRounds <= currentRound
+    _isGameOver(): boolean {
+        const {currentRound, gameConfig, rounds} = this.store.gameState;
+        const round: Round = rounds[currentRound]
+
+        return gameConfig.maxRounds <= currentRound && gameConfig.maxTurn <= round.currentTurn;
     }
 
     _revealTurnResult() {
@@ -377,7 +401,7 @@ class Room2 {
         if (match) {
             round.points += 1
         } else {
-            gameConfig.maxTurn ? round.points -= 1 : gameConfig.maxTurn -= 1 // TODO: Maybe a round shoud have an effective max turn
+            gameConfig.maxTurn ? round.points = Math.max(0, round.points + 1) : gameConfig.maxTurn -= 1 // TODO: Maybe a round shoud have an effective max turn
         }
         const result = match ? 'success' : 'failure'
         turn.result = result;
@@ -393,7 +417,7 @@ class Room2 {
     }
 
     _gameOver() {
-        const {clients, gameState}: {clients: Player[], gameState: GameState} = this.store;
+        const {clients, gameState}: { clients: Player[], gameState: GameState } = this.store;
         clients.forEach((client: Player) => {
             client.isGuessing = false;
             client.isReady = false;
@@ -411,7 +435,7 @@ class Room2 {
     }
 
     emitAllPlayers(clients: Player[]) {
-        this.io.to(this.roomId).emit('show-all-players', {clients})
+        this.io.to(this.roomId).emit('show-all-players', {players: clients})
     }
 
     _emitGameResults(results: number[]) {

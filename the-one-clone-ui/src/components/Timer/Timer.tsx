@@ -5,15 +5,15 @@ import {faStopwatch, faUserCog} from "@fortawesome/free-solid-svg-icons";
 
 interface TimerProps {
     timeout: number;
+    critical: number
 }
 
 export default (props: TimerProps) => {
-    const {timeout} = props;
+    const {timeout, critical} = props;
     return (
         <div className={styles.timer}>
-            <div>
-                <FontAwesomeIcon icon={faStopwatch}/>
-                {timeout}</div>
+            <FontAwesomeIcon icon={faStopwatch}/>
+            <div className={`${styles.timeout} ${timeout <= critical ? styles.animate: ""}`}>{timeout}</div>
         </div>
     )
 }

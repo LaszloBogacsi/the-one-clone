@@ -16,17 +16,6 @@ interface LobbyProps {
 
 export const Lobby = (props: LobbyProps) => {
     const {players, me, onReady, children} = props;
-    const cols = new Map<string, string>([
-        ['orange', '#f08100'],
-        ['red', '#c80c12'],
-        ['pink', '#e6127d'],
-        ['purple', '#792a81'],
-        ['blue', '#0086c8'],
-        ['green', '#42a338'],
-        ['yellow', '#f5ae07'],
-    ])
-
-    const getRandomColour = (iterable: any) => iterable.get([...iterable.keys()][Math.floor(Math.random() * iterable.size)])
 
     return (
         <div className={styles.lobby}>
@@ -34,7 +23,7 @@ export const Lobby = (props: LobbyProps) => {
                 <ul>
                     {players?.map((player: Player, index: number) =>
                         <li className={styles.playerListItem} key={index}>
-                            <FontAwesomeIcon style={{color: getRandomColour(cols)}} icon={faUser}/>
+                            <FontAwesomeIcon className={player.color} icon={faUser}/>
                             <div className={styles.playerName}>{player.name}</div>
                             <div className={styles.playerStatus}>
                                 {player.isReady ?

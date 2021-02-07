@@ -1,0 +1,13 @@
+.gameResults {
+    margin-top: 4rem;
+    table-layout: auto;
+    width: 280px;
+}
+
+.gameResults td {
+    line-height: 2rem;
+}
+
+.number {
+    color: #606060;
+}

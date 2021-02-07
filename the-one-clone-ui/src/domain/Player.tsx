@@ -5,4 +5,5 @@ export interface Player {
     isMe: boolean
     isAdmin: boolean
     isGuessing: boolean
+    color?: string
 }

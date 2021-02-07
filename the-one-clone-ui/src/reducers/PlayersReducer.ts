@@ -3,8 +3,13 @@ import {PlayerAction} from "./PlayerAction";
 
 export const playersReducer = (state: Player[], action: PlayerAction): Player[] => {
     switch (action.type) {
+        case "assignColor":
+            return state.map((player, index) => {
+                player.color = action.payload[index]
+                return player;
+            })
         case "updateAllPlayers":
-            return [...state];
+            return [...action.payload];
         case "removePlayer":
             return state.filter(player => player.id !== action.payload.id);
         case "updatePlayerIsReady":

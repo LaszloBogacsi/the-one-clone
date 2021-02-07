@@ -10,7 +10,25 @@ const cols = new Map<string, string>([
     ['yellow', '#f5ae07'],
 ])
 
+const colors = [
+    'orange',
+    'red',
+    'pink',
+    'purple',
+    'blue',
+    'green',
+    'yellow',
+]
+
 const getRandomColour = (iterable: any) => iterable.get([...iterable.keys()][Math.floor(Math.random() * iterable.size)])
+const shuffleArray = (array: string[]) => {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+}
 
 export default (keys: string[]) => {
     const [colorMap, setColorMap] = useState<Map<string, string>>(new Map())

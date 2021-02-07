@@ -1,6 +1,8 @@
 .lobby {
     padding: 0 2rem;
-
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .ready {
@@ -12,10 +14,7 @@
 }
 
 .playerList {
-    max-width: 400px;
     font-size: 2rem;
-    margin: auto;
-
 }
 
 .playerList ul {
@@ -46,6 +45,4 @@
 }
 
 .playerStatusButton {
-    display: flex;
-    justify-content: center;
 }
