@@ -4,6 +4,21 @@ import {GameStateAction} from "./GameStateAction";
 export function gameStateReducer(state: GameState, action: GameStateAction): GameState {
     const {rounds} = state;
     switch (action.type) {
+        case "announceRound":
+            return {
+                ...state,
+                announceRound: action.payload.announceRound
+            }
+        case "announceTurn":
+            return {
+                ...state,
+                announceTurn: action.payload.announceTurn
+            }
+        case "showRoles":
+            return {
+                ...state,
+                showRoles: action.payload.showRoles
+            }
         case "showRoundResult":
             return {
                 ...state,

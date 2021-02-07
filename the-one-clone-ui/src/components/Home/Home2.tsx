@@ -18,10 +18,12 @@ import GameStatus from "../GameStatus/GameStatus";
 import Timer from "../Timer/Timer";
 import Hinter from "../Hinter/Hinter";
 import Guesser from "../Guesser/Guesser";
-import ResultsOverlay from "../shared/ResultsOverlay/ResultsOverlay";
+import Overlay from "../shared/Overlay/Overlay";
 import TurnResult from "../TurnResult/TurnResult";
 import RoundResult from "../RoundResult/RoundResult";
 import '../shared/colors.module.css'
+import RolesAnnouncement from "../RolesAnnouncement/RolesAnnouncement";
+import Announcement from "../Announcement/Announcement";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -51,7 +53,10 @@ export function Home2() {
         hintTimeout: 0,
         maxRound: 0,
         maxTurn: 0,
-        results: []
+        results: [],
+        showRoles: false,
+        announceRound: false,
+        announceTurn: false
     };
     const [{
         rounds,
@@ -61,7 +66,10 @@ export function Home2() {
         hintTimeout,
         maxRound,
         maxTurn,
-        results
+        results,
+        showRoles,
+        announceRound,
+        announceTurn,
     }, dispatchGameAction] = useReducer(gameStateReducer, initialGameState)
     const [players, dispatchPlayerAction] = useReducer(playersReducer, [] as Player[])
     const [countdown, dispatchCountdownAction] = useReducer(countdownReducer, hintTimeout)
@@ -98,7 +106,10 @@ export function Home2() {
                 inLobby: gameState.inLobby,
                 rounds: gameState.rounds,
                 currentRound: gameState.currentRound,
-                results: gameState.results
+                results: gameState.results,
+                showRoles: false,
+                announceRound: false,
+                announceTurn: false
             })
 
             dispatchGameAction({type: "setGameState", payload: toGameState(data.gameState)})
@@ -110,23 +121,26 @@ export function Home2() {
                 payload: data.inLobby
             });
         }
-        const startRoundHandler = (data: { round: Round, currentRound: number }) => dispatchGameAction({
-            type: 'addRound',
-            payload: {...data}
-        });
+        const startRoundHandler = (data: { round: Round, currentRound: number }) => {
+            dispatchGameAction({type: 'addRound', payload: {...data}});
+            dispatchGameAction({type: 'announceRound', payload: {announceRound: true}});
+        }
         const playerRolesHandler = (data: { guesser: { id: string, name: string } }) => {
-            console.log(me)
             if (me?.id === data.guesser.id) {
-                // setMe(players.find(player => player.id === me.id))
                 setMe({...me, isGuessing: true})
             }
-            // TODO(do the me thing better)
             dispatchPlayerAction({type: 'updateGuesser', payload: data.guesser})
+            dispatchGameAction({type: 'announceRound', payload: {announceRound: false}});
+            dispatchGameAction({type: "showRoles", payload: {showRoles: true}})
         };
-        const startTurnHandler = (data: { turn: Turn, currentRound: number, currentTurn: number }) => dispatchGameAction({
-            type: 'addTurn',
-            payload: {...data}
-        });
+        const newTurnHandler = (data: { turn: Turn, currentRound: number, currentTurn: number }) => {
+            dispatchGameAction({type: "showRoles", payload: {showRoles: false}})
+            dispatchGameAction({type: 'addTurn', payload: {...data}});
+            dispatchGameAction({type: 'announceTurn', payload: {announceTurn: true}});
+        }
+        const startTurnHandler = (data: { message: string}) => {
+            dispatchGameAction({type: 'announceTurn', payload: {announceTurn: false}});
+        }
         const countdownHandler = (data: { countdown: number }) => dispatchCountdownAction({
             type: 'updateCountdown',
             payload: {...data}
@@ -174,6 +188,7 @@ export function Home2() {
         socket?.on('start-game', lobbyStateHandler)
         socket?.on('start-round', startRoundHandler)
         socket?.on('player-roles', playerRolesHandler)
+        socket?.on('new-turn', newTurnHandler)
         socket?.on('start-turn', startTurnHandler)
         socket?.on('countdown', countdownHandler)
         socket?.on('end-hint', endHintHandler)
@@ -192,6 +207,7 @@ export function Home2() {
             socket?.off('start-game', lobbyStateHandler)
             socket?.off('start-round', startRoundHandler)
             socket?.off('player-roles', playerRolesHandler)
+            socket?.off('new-turn', newTurnHandler)
             socket?.off('start-turn', startTurnHandler)
             socket?.off('countdown', countdownHandler)
             socket?.off('end-hint', endHintHandler)
@@ -305,10 +321,10 @@ export function Home2() {
         guess: "some guess", hints: mockHints, reveal: true, secretWord: "Secret Word", result: "success"
     }
     const mockPlayers: Player[] = [
-        {id: "1234", isAdmin: true, isGuessing: false, isMe: false, isReady: true, name: "Player Hinter Admin"},
-        {id: "2345", isAdmin: false, isGuessing: false, isMe: true, isReady: true, name: "Player Hinter 1"},
-        {id: "3456", isAdmin: false, isGuessing: false, isMe: false, isReady: true, name: "PLayer Hinter 2"},
-        {id: "3456", isAdmin: false, isGuessing: true, isMe: false, isReady: true, name: "Player Guesser"},
+        {id: "1234", isAdmin: true, isGuessing: false, isMe: false, isReady: true, name: "Player Hinter Admin", color: "blue"},
+        {id: "2345", isAdmin: false, isGuessing: false, isMe: false, isReady: true, name: "Player Hinter 1", color: "purple"},
+        {id: "3456", isAdmin: false, isGuessing: false, isMe: true, isReady: true, name: "PLayer Hinter 2", color: "red"},
+        {id: "4567", isAdmin: false, isGuessing: true, isMe: false, isReady: true, name: "Player Guesser", color: "orange"},
     ]
 
     const mockGameStatusProps = {
@@ -338,14 +354,15 @@ export function Home2() {
     const mockMe: Player = {
         id: "playerMe1",
         isAdmin: false,
-        isGuessing: true,
+        isGuessing: false,
         isMe: true,
         isReady: true,
         name: "Me the Great"
     }
 
     const mockRounds: Round[] = [
-        {currentTurn: 3, points: 13, turns: [mockTurn], showRoundResults: true}
+        // {currentTurn: 3, points: 13, turns: [mockTurn], showRoundResults: true}
+        {currentTurn: 3, points: 13, turns: [], showRoundResults: true}
     ]
 
     const mockLobbyParams = {
@@ -383,16 +400,6 @@ export function Home2() {
     const makeResultsWithDescription = (results: number[]) => {
         return results.map(result => ({...scoreDescription(result), result}))
     }
-    //
-    // const [counter, setCounter] = useState(10)
-    // useEffect(() => {
-    //     console.log("interval")
-    //     const interval = setInterval(() => {
-    //         setCounter(counter -1);
-    //     }, 1000)
-    //
-    //     return () => clearInterval(interval)
-    // }, [counter])
 
     return (
         <div className={`home ${styles.home}`}>
@@ -410,23 +417,15 @@ export function Home2() {
                     <span style={{color: color()}}>G</span><span style={{color: color()}}>A</span><span
                     style={{color: color()}}>M</span><span style={{color: color()}}>E</span>
                 </div>
-                {/*<div className="timer">*/}
-                {/*    <Timer*/}
-                {/*        // timeout={13}*/}
-                {/*        timeout={countdown}*/}
-                {/*        // timeout={counter}*/}
-                {/*        critical={10}*/}
-                {/*    />*/}
-                {/*</div>*/}
             </div>
-            {!socket &&
-            // {!true &&
+            {/*{!socket &&*/}
+            {!true &&
             <div className="init">
                 <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom} roomId={query.get("room-id")}/>
             </div>
             }
-            {socket && inLobby &&
-            // {true && true &&
+            {/*{socket && inLobby &&*/}
+            {!true && true &&
             <div className="lobby">
                 <Lobby
                     players={players}
@@ -441,65 +440,98 @@ export function Home2() {
             </div>
             }
 
-            {socket && !inLobby &&
-            // {true && !true &&
+            {/*{socket && !inLobby &&*/}
+            {true  &&
             <div className="game">
                 <div className="playerInfo">
                     <PlayerInfo
-                        players={players}
-                        // players={mockPlayers}
-                        turn={rounds.length > 0 ? rounds[currentRound].turns[rounds[currentRound].currentTurn] : undefined}
-                        // turn={mockTurn}
+                        // players={players}
+                        players={mockPlayers}
+                        // turn={rounds.length > 0 ? rounds[currentRound].turns[rounds[currentRound].currentTurn] : undefined}
+                        turn={mockTurn}
                     />
                 </div>
                 <div className="playArea">
-                    {!inLobby && rounds.length > 0 &&
-                    // {!false && mockRounds.length > 0 &&
+                    {/*{!inLobby && rounds.length > 0 &&*/}
+                    {!false && mockRounds.length > 0 &&
                     <div className={styles.playArea}>
-                        {me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&
-                        // {mockMe && !mockMe.isGuessing && mockRounds.length && mockRounds[0].turns.length > 0 &&
+                        {/*{me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
+                        {mockMe && !mockMe.isGuessing && mockRounds.length && mockRounds[0].turns.length > 0 &&
                         <Hinter
-                            secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
-                            onHint={onHint}
-                            reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
-                            hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
-                            me={me}
-                            //{...mockHinterProps}
+                            // secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
+                            // onHint={onHint}
+                            // reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
+                            // hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
+                            // me={me}
+                            {...mockHinterProps}
                         />
                         }
 
-                        {me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&
-                        // {mockMe && mockMe.isGuessing && mockRounds.length && mockRounds[0].turns.length > 0 &&
+                        {/*{me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
+                        {mockMe && mockMe.isGuessing && mockRounds.length && mockRounds[0].turns.length > 0 &&
                         <Guesser
-                            reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
-                            hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
-                            onGuess={onGuess}
-                            onSkip={onSkip}
-                            me={me}
-                            //{...mockGuesserProps}
+                            // reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
+                            // hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
+                            // onGuess={onGuess}
+                            // onSkip={onSkip}
+                            // me={me}
+                            {...mockGuesserProps}
                         />
                         }
-                        {rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].result && !rounds[currentRound].showRoundResults &&
-                        // {mockRounds.length && mockRounds[0].turns[0].result && !mockRounds[0].showRoundResults &&
-                        <ResultsOverlay>
+                        {/*{rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].result && !rounds[currentRound].showRoundResults &&*/}
+                        {false && mockRounds.length && mockRounds[0].turns[0].result && !mockRounds[0].showRoundResults &&
+                        <Overlay>
                             <TurnResult
                                 turn={rounds[currentRound].turns[rounds[currentRound].currentTurn]}
                                 player={players.find(player => player.isGuessing)!}
                                 // player={mockPlayers.find(player => player.isGuessing)!}
                                 // turn={mockTurn}
                             />
-                        </ResultsOverlay>
+                        </Overlay>
                         }
-                        {rounds[currentRound].showRoundResults &&
-                        // {mockRounds[0].showRoundResults &&
-                        <ResultsOverlay>
+                        {/*{rounds[currentRound].showRoundResults &&*/}
+                        {false && mockRounds[0].showRoundResults &&
+                        <Overlay>
                             <RoundResult
-                                points={rounds[currentRound].points}
-                                scoreDescription={scoreDescription(rounds[currentRound].points)}
-                                // points={mockRounds[0].points}
-                                // scoreDescription={scoreDescription(mockRounds[0].points)}
+                                // points={rounds[currentRound].points}
+                                // scoreDescription={scoreDescription(rounds[currentRound].points)}
+                                points={mockRounds[0].points}
+                                scoreDescription={scoreDescription(mockRounds[0].points)}
                             />
-                        </ResultsOverlay>
+                        </Overlay>
+                        }
+                        {/*{showRoles &&*/}
+                        {true &&
+                        <Overlay>
+                            <RolesAnnouncement
+                                // me={me}
+                                me={mockPlayers.find(p => p.isMe)}
+                                guesser={mockPlayers.find(p => p.isGuessing)}
+                                // guesser={players.find(p => p.isGuessing)}
+
+                            />
+                        </Overlay>
+                        }
+                        {/*{announceRound &&*/}
+                        {!true &&
+                        <Overlay>
+                            <Announcement
+                                type={"Round"}
+                                // announcement={`${mockGameStatusProps.currentRound}`}
+                                announcement={`${currentRound + 1}`}
+                            />
+                        </Overlay>
+                        }
+                        {/*{announceTurn &&*/}
+                        {!true &&
+                        <Overlay>
+                            <Announcement
+                                type={"Turn"}
+                                // announcement={`${mockGameStatusProps.currentTurn}`}
+                                announcement={`${rounds[currentRound].currentTurn + 1}`}
+
+                            />
+                        </Overlay>
                         }
                     </div>
 

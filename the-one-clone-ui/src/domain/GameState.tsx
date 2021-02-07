@@ -9,4 +9,7 @@ export interface GameState {
     hintTimeout: number
     guessTimeout: number
     results: number[]
+    showRoles: boolean
+    announceRound: boolean
+    announceTurn: boolean
 }

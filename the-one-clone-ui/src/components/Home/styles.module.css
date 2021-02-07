@@ -4,11 +4,11 @@
     font-family: cafeteriabold;
 }
 
-
 .home {
    font-size: 1.5rem;
 }
 
 .playArea {
     position: relative;
+    height: 100%;
 }

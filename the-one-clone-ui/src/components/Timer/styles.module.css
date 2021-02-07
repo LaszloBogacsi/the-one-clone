@@ -25,3 +25,19 @@
         color: var(--gameAccentRed);
     }
 }
+
+
+.shake {
+    animation: shaky 0.15s linear infinite 1.2s alternate;
+}
+
+@keyframes shaky {
+    0% {
+        transform: rotate(30deg)
+    }
+
+    100% {
+        transform: rotate(-30deg);
+        color: var(--gameAccentRed);
+    }
+}

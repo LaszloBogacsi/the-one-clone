@@ -1,0 +1,16 @@
+.announcement {
+    color: white;
+    font-size: 8rem;
+}
+
+.announcement div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.highlight {
+    font-weight: bold;
+    font-size: 1.5em;
+    margin-left: 2rem;
+}

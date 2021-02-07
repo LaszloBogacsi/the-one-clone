@@ -53,7 +53,7 @@
   align-items: center;
   display: grid;
   grid-template-columns: minmax(100px, .4fr) 1fr;
-  grid-template-rows: 4rem 3rem auto auto;
+  grid-template-rows: 4rem 3rem minmax(250px, auto) auto;
   grid-template-areas:
     "header header"
     "timer gamestatus"
@@ -71,6 +71,7 @@
 
 .playArea {
   grid-area: playarea;
+  height: 100%;
 }
 
 .gameStatus {
@@ -85,7 +86,7 @@
   .game {
     display: grid;
     grid-template-columns: auto 3fr;
-    grid-template-rows: 4rem 3rem auto auto;
+    grid-template-rows: 4rem 3rem minmax(400px, auto) auto;
     grid-template-areas:
     "header header"
     "timer gamestatus"
@@ -105,7 +106,7 @@
 
     display: grid;
     grid-template-columns: auto 3fr;
-    grid-template-rows: 4rem 3rem auto auto;
+    grid-template-rows: 4rem 3rem minmax(400px, auto) auto;
     grid-template-areas:
     "header header"
     "timer gamestatus"

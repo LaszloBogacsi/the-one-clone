@@ -208,9 +208,9 @@ class Room2 {
     resetGameState() {
         const config = new GameConfig(
             2,
-            3_000,
-            5_000,
-            3
+            6_000,
+            6_000,
+            2
         )
         this.store.gameState = new GameState(config)
     }
@@ -243,8 +243,9 @@ class Room2 {
 
     _getEventTiming(currentRound: number) {
         return function (event: string) {
-            const timings: Map<string, number> = new Map([["newRound", 2000], ["announceRoles", 4000], ["newTurn", 6000]])
-            const timings2: Map<string, number> = new Map([["roundEnd", 2000], ["newRound", 4000], ["announceRoles", 6000], ["newTurn", 8000]])
+            const interval = 3000;
+            const timings: Map<string, number> = new Map([["newRound", interval], ["announceRoles", interval * 2], ["announceNewTurn", interval * 3], ["startNewTurn", interval * 4]])
+            const timings2: Map<string, number> = new Map([["roundEnd", interval], ["newRound", interval * 2], ["announceRoles",  interval * 3], ["announceNewTurn",  interval * 4], ["startNewTurn",  interval * 5]])
             return currentRound > -1 ? timings.get(event) : timings2.get(event);
         }
     }
@@ -275,7 +276,8 @@ class Room2 {
         }
 
         setTimeout(announceRoles, timingFor("announceRoles"))
-        setTimeout(this._startNewTurn.bind(this), timingFor("newTurn"))
+        setTimeout(this._announceNewTurn.bind(this), timingFor("announceNewTurn"))
+        setTimeout(this._startNewTurn.bind(this), timingFor("startNewTurn"))
     }
 
     _roundEnd() {
@@ -290,22 +292,29 @@ class Room2 {
         this.store.gameState.addRound(round)
         this._emitRound(round, this.store.gameState.currentRound)
         console.info(`[NEWROUND] New Round starting, in ${this.roomId} room`);
-
     }
 
-    _startNewTurn() {
+    _announceNewTurn() {
         const {gameState}: { gameState: GameState } = this.store;
-        const {rounds, currentRound, gameConfig} = gameState;
+        const {rounds, currentRound} = gameState;
         const turn = new Turn(this._getSecretWord());
         const round = rounds[currentRound];
         round.addTurn(turn)
         this._emitNewTurn(turn, currentRound, round.currentTurn)
+    }
+
+    _startNewTurn() {
         console.info(`[NEWTURN] New Turn starting, in ${this.roomId} room`);
-        this._startCountDown(gameConfig.hintTimeout / 1000, this._hintToGuessTransition.bind(this))
+        this._emitStartNewTurn()
+        this._startCountDown(this.store.gameState.gameConfig.hintTimeout / 1000, this._hintToGuessTransition.bind(this))
     }
 
     _emitNewTurn(turn: Turn, currentRound: any, currentTurn: number) {
-        this.io.to(this.roomId).emit('start-turn', {turn, currentRound, currentTurn})
+        this.io.to(this.roomId).emit('new-turn', {turn, currentRound, currentTurn})
+    }
+
+    _emitStartNewTurn() {
+        this.io.to(this.roomId).emit('start-turn', {message: "start turn"})
     }
 
     _startCountDown(delay: number, transition: () => void) {
@@ -381,7 +390,7 @@ class Room2 {
     _guessToNewTurnTransition() {
         this._clearTimeouts()
         this._revealTurnResult()
-        !this._isGameOver() ? this._prepAndStartNewTurn() : setTimeout(this._gameOver, 2000)
+        !this._isGameOver() ? this._prepAndStartNewTurn() : setTimeout(this._gameOver.bind(this), 2000)
     }
 
     _isGameOver(): boolean {

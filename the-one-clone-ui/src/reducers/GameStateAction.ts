@@ -13,3 +13,6 @@ export type GameStateAction =
     | { type: 'setTurnResult', payload: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string } }
     | { type: 'setGameResult', payload: number[]}
     | { type: 'showRoundResult', payload: {currentRound: number, showRoundResult: boolean}}
+    | { type: 'showRoles', payload: {showRoles: boolean}}
+    | { type: 'announceRound', payload: {announceRound: boolean}}
+    | { type: 'announceTurn', payload: {announceTurn: boolean}}

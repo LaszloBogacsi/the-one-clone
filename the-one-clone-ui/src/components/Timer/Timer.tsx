@@ -12,7 +12,7 @@ export default (props: TimerProps) => {
     const {timeout, critical} = props;
     return (
         <div className={styles.timer}>
-            <FontAwesomeIcon icon={faStopwatch}/>
+            <FontAwesomeIcon className={timeout <= critical / 2 ? styles.shake : ""} icon={faStopwatch}/>
             <div className={`${styles.timeout} ${timeout <= critical ? styles.animate: ""}`}>{timeout}</div>
         </div>
     )

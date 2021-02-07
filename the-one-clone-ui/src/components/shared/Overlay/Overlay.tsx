@@ -1,14 +1,14 @@
 import React, {ReactNode} from "react";
 import styles from './styles.module.css'
 
-interface ResultsOverlayProps {
+interface OverlayProps {
     children: ReactNode
 }
 
-export default (props: ResultsOverlayProps) => {
+export default (props: OverlayProps) => {
     const {children} = props;
     return (
-        <div className={styles.resultOverlay}>
+        <div className={styles.overlay}>
             {children}
         </div>
     )
