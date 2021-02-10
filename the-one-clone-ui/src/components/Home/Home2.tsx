@@ -138,7 +138,7 @@ export function Home2() {
             dispatchGameAction({type: 'addTurn', payload: {...data}});
             dispatchGameAction({type: 'announceTurn', payload: {announceTurn: true}});
         }
-        const startTurnHandler = (data: { message: string}) => {
+        const startTurnHandler = (data: { message: string }) => {
             dispatchGameAction({type: 'announceTurn', payload: {announceTurn: false}});
         }
         const countdownHandler = (data: { countdown: number }) => dispatchCountdownAction({
@@ -249,8 +249,6 @@ export function Home2() {
         return array;
     }
     const randomColors = useMemo(() => shuffleArray(colors), [colors.length])
-    console.log("random colors");
-    console.log(randomColors);
 
     useEffect(() => {
         if (players.length > 0) {
@@ -311,7 +309,6 @@ export function Home2() {
     ])
 
     const getRandomColour = (iterable: any) => iterable.get([...iterable.keys()][Math.floor(Math.random() * iterable.size)])
-    console.log(players);
     const color = () => getRandomColour(cols);
     const mockHints: Hint[] = [
         {duplicate: false, hint: "another hint", player: "1234"},
@@ -321,10 +318,42 @@ export function Home2() {
         guess: "some guess", hints: mockHints, reveal: true, secretWord: "Secret Word", result: "success"
     }
     const mockPlayers: Player[] = [
-        {id: "1234", isAdmin: true, isGuessing: false, isMe: false, isReady: true, name: "Player Hinter Admin", color: "blue"},
-        {id: "2345", isAdmin: false, isGuessing: false, isMe: false, isReady: true, name: "Player Hinter 1", color: "purple"},
-        {id: "3456", isAdmin: false, isGuessing: false, isMe: true, isReady: true, name: "PLayer Hinter 2", color: "red"},
-        {id: "4567", isAdmin: false, isGuessing: true, isMe: false, isReady: true, name: "Player Guesser", color: "orange"},
+        {
+            id: "1234",
+            isAdmin: true,
+            isGuessing: false,
+            isMe: false,
+            isReady: true,
+            name: "Player Hinter Admin",
+            color: "blue"
+        },
+        {
+            id: "2345",
+            isAdmin: false,
+            isGuessing: false,
+            isMe: false,
+            isReady: true,
+            name: "Player Hinter 1",
+            color: "purple"
+        },
+        {
+            id: "3456",
+            isAdmin: false,
+            isGuessing: false,
+            isMe: true,
+            isReady: true,
+            name: "PLayer Hinter 2",
+            color: "red"
+        },
+        {
+            id: "4567",
+            isAdmin: false,
+            isGuessing: true,
+            isMe: false,
+            isReady: true,
+            name: "Player Guesser",
+            color: "orange"
+        },
     ]
 
     const mockGameStatusProps = {
@@ -400,9 +429,73 @@ export function Home2() {
     const makeResultsWithDescription = (results: number[]) => {
         return results.map(result => ({...scoreDescription(result), result}))
     }
+    const mockSettingsInitial: { [key: string]: { useMock: boolean, visible: boolean } } = {
+        mockSocket: {useMock: true, visible: false},
+        mockLobby: {useMock: true, visible: false},
+        mockGame: {useMock: true, visible: true},
+        mockPlayerInfo: {useMock: true, visible: true},
+        mockPlayerArea: {useMock: true, visible: true},
+        mockHinter: {useMock: true, visible: true},
+        mockGueser: {useMock: true, visible: false},
+        mockTurnResults: {useMock: true, visible: false},
+        mockRoundResults: {useMock: true, visible: false},
+        mockRolesAnnouncement: {useMock: true, visible: false},
+        mockRoundAnnouncement: {useMock: true, visible: false},
+        mockTurnAnnouncement: {useMock: true, visible: false},
+        mockGameStatus: {useMock: true, visible: true},
+        mockTimer: {useMock: true, visible: true},
+    }
 
+    const [mockSettings, setMockSettings] = useState(mockSettingsInitial);
+
+    function allMocksHide(settings: any, ...exceptions: string[]) {
+        const newMockSettings = {...settings};
+        Object.keys(newMockSettings).forEach((key: string) => {
+            if (exceptions.includes(key)) {
+                newMockSettings[key].useMock = true;
+                newMockSettings[key].visible = false;
+            }
+
+        })
+        return newMockSettings;
+    }
+
+    const showLobby = () => setMockSettings({...(allMocksHide(mockSettings, "mockSocket", "mockGame")), mockLobby: {useMock: true, visible: true}})
+    const showStart = () => setMockSettings({...(allMocksHide(mockSettings, "mockLobby", "mockGame")), mockSocket: {useMock: true, visible: true}})
+    const showGame = () => setMockSettings({...(allMocksHide(mockSettings, "mockSocket", "mockLobby")), mockGame: {useMock: true, visible: true}})
+    const playerInfoToggle = () => setMockSettings({...mockSettings, mockPlayerInfo: {useMock: true, visible: !mockSettings.mockPlayerInfo.visible}})
+    const playerAreaToggle = () => setMockSettings({...mockSettings, mockPlayerArea: {useMock: true, visible: !mockSettings.mockPlayerArea.visible}})
+    const hinterToggle = () => setMockSettings({...mockSettings, mockHinter: {useMock: true, visible: !mockSettings.mockHinter.visible}})
+    const guesserToggle = () => setMockSettings({...mockSettings, mockGueser: {useMock: true, visible: !mockSettings.mockGueser.visible}})
+    const turnResultsToggle = () => setMockSettings({...mockSettings, mockTurnResults: {useMock: true, visible: !mockSettings.mockTurnResults.visible}})
+    const roundResultsToggle = () => setMockSettings({...mockSettings, mockRoundResults: {useMock: true, visible: !mockSettings.mockRoundResults.visible}})
+    const roleAnnouncementToggle = () => setMockSettings({...mockSettings, mockRolesAnnouncement: {useMock: true, visible: !mockSettings.mockRolesAnnouncement.visible}})
+    const roundAnnouncementToggle = () => setMockSettings({...mockSettings, mockRoundAnnouncement: {useMock: true, visible: !mockSettings.mockRoundAnnouncement.visible}})
+    const turnAnnouncementToggle = () => setMockSettings({...mockSettings, mockTurnAnnouncement: {useMock: true, visible: !mockSettings.mockTurnAnnouncement.visible}})
+    const gameStatusToggle = () => setMockSettings({...mockSettings, mockGameStatus: {useMock: true, visible: !mockSettings.mockGameStatus.visible}})
+    const timerToggle = () => setMockSettings({...mockSettings, mockTimer: {useMock: true, visible: !mockSettings.mockTimer.visible}})
+    const getStyle = (key: string) => mockSettings[key].visible ? "green" : "red"
     return (
         <div className={`home ${styles.home}`}>
+            <button onClick={showStart}>show start</button>
+            <button onClick={showLobby}>show lobby</button>
+            <button onClick={showGame}>show game</button>
+            {mockSettings.mockGame.visible &&
+            <div>
+                <button style={{color: getStyle("mockPlayerInfo")}} onClick={playerInfoToggle}>PlayerInfo</button>
+                <button style={{color: getStyle("mockPlayerArea")}} onClick={playerAreaToggle}>PlayerArea</button>
+                <button style={{color: getStyle("mockHinter")}} onClick={hinterToggle}>Hinter</button>
+                <button style={{color: getStyle("mockGueser")}} onClick={guesserToggle}>Guesser</button>
+                <button style={{color: getStyle("mockTurnResults")}} onClick={turnResultsToggle}>TurnResult</button>
+                <button style={{color: getStyle("mockRoundResults")}} onClick={roundResultsToggle}>RoundResult</button>
+                <button style={{color: getStyle("mockRolesAnnouncement")}} onClick={roleAnnouncementToggle}>roleAnnouncement</button>
+                <button style={{color: getStyle("mockRoundAnnouncement")}} onClick={roundAnnouncementToggle}>roundAnnouncement</button>
+                <button style={{color: getStyle("mockTurnAnnouncement")}} onClick={turnAnnouncementToggle}>turnAnnouncement</button>
+                <button style={{color: getStyle("mockGameStatus")}} onClick={gameStatusToggle}>gameStatus</button>
+                <button style={{color: getStyle("mockTimer")}} onClick={timerToggle}>timer</button>
+            </div>
+
+            }
             <div className='header'>
                 <div className={styles.title}>
                     <span style={{color: color()}}>T</span><span style={{color: color()}}>H</span><span
@@ -418,119 +511,116 @@ export function Home2() {
                     style={{color: color()}}>M</span><span style={{color: color()}}>E</span>
                 </div>
             </div>
-            {/*{!socket &&*/}
-            {!true &&
+            {(mockSettings.mockSocket.useMock ? mockSettings.mockSocket.visible : !socket) &&
             <div className="init">
                 <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom} roomId={query.get("room-id")}/>
             </div>
             }
-            {/*{socket && inLobby &&*/}
-            {!true && true &&
+            {(mockSettings.mockLobby.useMock ? mockSettings.mockLobby.visible : (socket && inLobby)) &&
             <div className="lobby">
-                <Lobby
-                    players={players}
-                    me={me}
-                    onReady={onReady}
-                    //{...mockLobbyParams}
-                >
-                    {results && results.length > 0 ?
-                        <GameResults results={makeResultsWithDescription(results)}/> : null}
-                    {/*{mockResults && mockResults.length > 0 ? <GameResults results={makeResultsWithDescription(mockResults)}/> : null}*/}
-                </Lobby>
+                {mockSettings.mockLobby.useMock ?
+                    <Lobby {...mockLobbyParams}>
+                        {mockResults && mockResults.length > 0 ?
+                            <GameResults results={makeResultsWithDescription(mockResults)}/> : null}
+                    </Lobby> :
+                    <Lobby players={players} me={me} onReady={onReady}>
+                        {results && results.length > 0 ?
+                            <GameResults results={makeResultsWithDescription(results)}/> : null}
+                    </Lobby>
+                }
             </div>
             }
-
-            {/*{socket && !inLobby &&*/}
-            {true  &&
+            {(mockSettings.mockGame.useMock ? mockSettings.mockGame.visible : (socket && !inLobby)) &&
             <div className="game">
                 <div className="playerInfo">
-                    <PlayerInfo
-                        // players={players}
-                        players={mockPlayers}
-                        // turn={rounds.length > 0 ? rounds[currentRound].turns[rounds[currentRound].currentTurn] : undefined}
-                        turn={mockTurn}
-                    />
+                    {(mockSettings.mockPlayerInfo.useMock ? mockSettings.mockPlayerInfo.visible : mockSettings.mockPlayerInfo.visible) &&
+                        <div>
+                            {mockSettings.mockPlayerInfo.useMock ?
+                                <PlayerInfo players={mockPlayers} turn={mockTurn}/>
+                                : <PlayerInfo players={players}
+                                              turn={rounds.length > 0 ? rounds[currentRound].turns[rounds[currentRound].currentTurn] : undefined}/>}
+                        </div>
+                    }
                 </div>
                 <div className="playArea">
-                    {/*{!inLobby && rounds.length > 0 &&*/}
-                    {!false && mockRounds.length > 0 &&
+                    {(mockSettings.mockPlayerArea.useMock ? mockSettings.mockPlayerArea.visible : (!inLobby && rounds.length > 0)) &&
                     <div className={styles.playArea}>
-                        {/*{me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
-                        {mockMe && !mockMe.isGuessing && mockRounds.length && mockRounds[0].turns.length > 0 &&
-                        <Hinter
-                            // secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
-                            // onHint={onHint}
-                            // reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
-                            // hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
-                            // me={me}
-                            {...mockHinterProps}
-                        />
+                        {(mockSettings.mockHinter.useMock ? mockSettings.mockHinter.visible : (me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0)) &&
+                        <div>
+                            {mockSettings.mockHinter.useMock ?
+                                <Hinter{...mockHinterProps}/>
+                                : <Hinter
+                                    secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
+                                    onHint={onHint}
+                                    reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
+                                    hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
+                                    me={me!}/>
+                            }
+                        </div>
                         }
 
-                        {/*{me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 &&*/}
-                        {mockMe && mockMe.isGuessing && mockRounds.length && mockRounds[0].turns.length > 0 &&
-                        <Guesser
-                            // reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
-                            // hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
-                            // onGuess={onGuess}
-                            // onSkip={onSkip}
-                            // me={me}
-                            {...mockGuesserProps}
-                        />
-                        }
-                        {/*{rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].result && !rounds[currentRound].showRoundResults &&*/}
-                        {false && mockRounds.length && mockRounds[0].turns[0].result && !mockRounds[0].showRoundResults &&
-                        <Overlay>
-                            <TurnResult
-                                turn={rounds[currentRound].turns[rounds[currentRound].currentTurn]}
-                                player={players.find(player => player.isGuessing)!}
-                                // player={mockPlayers.find(player => player.isGuessing)!}
-                                // turn={mockTurn}
-                            />
-                        </Overlay>
-                        }
-                        {/*{rounds[currentRound].showRoundResults &&*/}
-                        {false && mockRounds[0].showRoundResults &&
-                        <Overlay>
-                            <RoundResult
-                                // points={rounds[currentRound].points}
-                                // scoreDescription={scoreDescription(rounds[currentRound].points)}
-                                points={mockRounds[0].points}
-                                scoreDescription={scoreDescription(mockRounds[0].points)}
-                            />
-                        </Overlay>
-                        }
-                        {/*{showRoles &&*/}
-                        {true &&
-                        <Overlay>
-                            <RolesAnnouncement
-                                // me={me}
-                                me={mockPlayers.find(p => p.isMe)}
-                                guesser={mockPlayers.find(p => p.isGuessing)}
-                                // guesser={players.find(p => p.isGuessing)}
+                        {(mockSettings.mockGueser.useMock ? mockSettings.mockGueser.visible : (me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0)) &&
+                        <div>
+                            {mockSettings.mockGueser.useMock ?
+                                <Guesser{...mockGuesserProps}/>
+                                : <Guesser
+                                    reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
+                                    hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
+                                    onGuess={onGuess}
+                                    onSkip={onSkip}
+                                    me={me!}/>
+                            }
+                        </div>
 
-                            />
+                        }
+                        {(mockSettings.mockTurnResults.useMock ? mockSettings.mockTurnResults.visible : (rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].result && !rounds[currentRound].showRoundResults)) &&
+                        <Overlay>
+                            {mockSettings.mockTurnResults.useMock ?
+                                <TurnResult player={mockPlayers.find(player => player.isGuessing)!}
+                                            turn={mockTurn}/>
+                                : <TurnResult
+                                    turn={rounds[currentRound].turns[rounds[currentRound].currentTurn]}
+                                    player={players.find(player => player.isGuessing)!}
+                                />
+                            }
                         </Overlay>
                         }
-                        {/*{announceRound &&*/}
-                        {!true &&
+                        {(mockSettings.mockRoundResults.useMock ? mockSettings.mockRoundResults.visible : (rounds[currentRound].showRoundResults)) &&
                         <Overlay>
-                            <Announcement
-                                type={"Round"}
-                                // announcement={`${mockGameStatusProps.currentRound}`}
-                                announcement={`${currentRound + 1}`}
-                            />
+                            {mockSettings.mockRoundResults.useMock ?
+                                <RoundResult points={mockRounds[0].points}
+                                             scoreDescription={scoreDescription(mockRounds[0].points)}/>
+                                : <RoundResult points={rounds[currentRound].points}
+                                               scoreDescription={scoreDescription(rounds[currentRound].points)}/>
+                            }
                         </Overlay>
                         }
-                        {/*{announceTurn &&*/}
-                        {!true &&
+                        {(mockSettings.mockRolesAnnouncement.useMock ? mockSettings.mockRolesAnnouncement.visible : showRoles) &&
                         <Overlay>
-                            <Announcement
-                                type={"Turn"}
-                                // announcement={`${mockGameStatusProps.currentTurn}`}
-                                announcement={`${rounds[currentRound].currentTurn + 1}`}
-
-                            />
+                            {mockSettings.mockRolesAnnouncement.useMock ?
+                                <RolesAnnouncement me={mockPlayers.find(p => p.isMe)}
+                                                   guesser={mockPlayers.find(p => p.isGuessing)}/>
+                                : <RolesAnnouncement me={me} guesser={players.find(p => p.isGuessing)}/>
+                            }
+                        </Overlay>
+                        }
+                        {(mockSettings.mockRoundAnnouncement.useMock ? mockSettings.mockRoundAnnouncement.visible : announceRound) &&
+                        <Overlay>
+                            {mockSettings.mockRoundAnnouncement.useMock ?
+                                <Announcement type={"Round"}
+                                              announcement={`${mockGameStatusProps.currentRound}`}/>
+                                : <Announcement type={"Round"} announcement={`${currentRound + 1}`}/>
+                            }
+                        </Overlay>
+                        }
+                        {(mockSettings.mockTurnAnnouncement.useMock ? mockSettings.mockTurnAnnouncement.visible : announceTurn) &&
+                        <Overlay>
+                            {mockSettings.mockTurnAnnouncement.useMock ?
+                                <Announcement type={"Turn"}
+                                              announcement={`${mockGameStatusProps.currentTurn}`}/>
+                                : <Announcement type={"Turn"}
+                                                announcement={`${rounds[currentRound].currentTurn + 1}`}/>
+                            }
                         </Overlay>
                         }
                     </div>
@@ -538,23 +628,31 @@ export function Home2() {
                     }
                 </div>
                 <div className="gameStatus">
-                    {!inLobby && rounds.length > 0 &&
-                    <GameStatus
-                        currentRound={currentRound}
-                        currentTurn={rounds[currentRound].currentTurn}
-                        maxRounds={maxRound}
-                        maxTurns={maxTurn}
-                        points={rounds[currentRound].points}
-                        //{...mockGameStatusProps}
-                    />
+                    {(mockSettings.mockGameStatus.useMock ? mockSettings.mockGameStatus.visible : (!inLobby && rounds.length > 0)) &&
+                    <div>
+                        {mockSettings.mockGameStatus.useMock ?
+                            <GameStatus{...mockGameStatusProps}/>
+                            : <GameStatus
+                                currentRound={currentRound}
+                                currentTurn={rounds[currentRound].currentTurn}
+                                maxRounds={maxRound}
+                                maxTurns={maxTurn}
+                                points={rounds[currentRound].points}
+                            />
+                        }
+                    </div>
                     }
                 </div>
                 <div className="timer">
-                    <Timer
-                        // timeout={13}
-                        timeout={countdown}
-                        critical={10}
-                    />
+                    {(mockSettings.mockTimer.useMock ? mockSettings.mockTimer.visible : mockSettings.mockTimer.visible) &&
+                    <div>
+                        {mockSettings.mockTimer.useMock ?
+                            <Timer timeout={13} critical={10}/>
+                            : <Timer timeout={countdown} critical={10}/>
+                        }
+                    </div>
+
+                    }
                 </div>
             </div>
             }
