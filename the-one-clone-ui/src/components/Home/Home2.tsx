@@ -24,6 +24,18 @@ import RoundResult from "../RoundResult/RoundResult";
 import '../shared/colors.module.css'
 import RolesAnnouncement from "../RolesAnnouncement/RolesAnnouncement";
 import Announcement from "../Announcement/Announcement";
+import MockToggler from "./MockToggler";
+import Header from "../Header/Header";
+import {
+    mockGameStatusProps,
+    mockGuesserProps,
+    mockHinterProps,
+    mockLobbyParams,
+    mockPlayers,
+    mockResults,
+    mockRounds,
+    mockTurn
+} from "./MockData";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -56,7 +68,8 @@ export function Home2() {
         results: [],
         showRoles: false,
         announceRound: false,
-        announceTurn: false
+        announceTurn: false,
+        announceGameOver: false,
     };
     const [{
         rounds,
@@ -70,6 +83,7 @@ export function Home2() {
         showRoles,
         announceRound,
         announceTurn,
+        announceGameOver,
     }, dispatchGameAction] = useReducer(gameStateReducer, initialGameState)
     const [players, dispatchPlayerAction] = useReducer(playersReducer, [] as Player[])
     const [countdown, dispatchCountdownAction] = useReducer(countdownReducer, hintTimeout)
@@ -109,17 +123,19 @@ export function Home2() {
                 results: gameState.results,
                 showRoles: false,
                 announceRound: false,
-                announceTurn: false
+                announceTurn: false,
+                announceGameOver: false
             })
 
             dispatchGameAction({type: "setGameState", payload: toGameState(data.gameState)})
         };
         const lobbyStateHandler = (data: { inLobby: boolean }) => {
             console.log(data)
-            dispatchGameAction({
-                type: 'setInLobby',
-                payload: data.inLobby
-            });
+            dispatchGameAction({type: 'setInLobby', payload: data.inLobby});
+        }
+        const gameOverAnnouncementHandler = (data: { gameOver: boolean }) => {
+            console.log(data)
+            dispatchGameAction({type: 'announceGameOver', payload: {...data}});
         }
         const startRoundHandler = (data: { round: Round, currentRound: number }) => {
             dispatchGameAction({type: 'addRound', payload: {...data}});
@@ -161,11 +177,7 @@ export function Home2() {
             payload: {...data}
         });
         const showAllPlayersHandler = (data: { players: any }) => {
-            console.log(data)
-            dispatchPlayerAction({
-                type: 'updateAllPlayers',
-                payload: data.players.map(toPlayer)
-            });
+            dispatchPlayerAction({type: 'updateAllPlayers', payload: data.players.map(toPlayer)});
             dispatchPlayerAction({type: "assignColor", payload: [...randomColors]})
         }
         const gameResultHandler = (data: { results: number[] }) => dispatchGameAction({
@@ -196,6 +208,7 @@ export function Home2() {
         socket?.on('turn-hints-reveal', turnHintsRevealHandler)
         socket?.on('turn-result', turnResultHandler)
         socket?.on('end-round', endRoundHandler)
+        socket?.on('game-over-announcement', gameOverAnnouncementHandler)
         socket?.on('end-game', lobbyStateHandler)
         socket?.on('show-all-players', showAllPlayersHandler)
         socket?.on('game-result', gameResultHandler)
@@ -215,6 +228,7 @@ export function Home2() {
             socket?.off('turn-hints-reveal', turnHintsRevealHandler)
             socket?.off('turn-result', turnResultHandler)
             socket?.off('end-round', endRoundHandler)
+            socket?.off('game-over-announcement', gameOverAnnouncementHandler)
             socket?.off('end-game', lobbyStateHandler)
             socket?.off('show-all-players', showAllPlayersHandler)
             socket?.off('game-result', gameResultHandler)
@@ -266,24 +280,6 @@ export function Home2() {
     // const roomId = query.get("room-id")
     const onJoinRoom = async (playerName: string) => connectWebsocket("join", playerName)
     const onCreateRoom = async (playerName: string) => connectWebsocket("create", playerName)
-
-    const onInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-        switch (event.target.name) {
-            case "hintSecond": {
-                setHintSecond(event.target.value || "");
-                break;
-            }
-            case "guess": {
-                setGuess(event.target.value || "");
-                break;
-            }
-            default: {
-                throw Error("input name not supported: " + event.target.name)
-            }
-        }
-
-    };
-
     const onReady = () => socket!.emit('on-ready', {ready: !me?.isReady})
 
     const onHint = (event: any, hint: string) => socket!.emit('on-player-hint-submit', {hint})
@@ -297,115 +293,6 @@ export function Home2() {
         setGuess("")
     }
     const onSkip = (event: any) => onGuess(event, "", true)
-
-    const cols = new Map<string, string>([
-        ['orange', '#f08100'],
-        ['red', '#c80c12'],
-        ['pink', '#e6127d'],
-        ['purple', '#792a81'],
-        ['blue', '#0086c8'],
-        ['green', '#42a338'],
-        ['yellow', '#f5ae07'],
-    ])
-
-    const getRandomColour = (iterable: any) => iterable.get([...iterable.keys()][Math.floor(Math.random() * iterable.size)])
-    const color = () => getRandomColour(cols);
-    const mockHints: Hint[] = [
-        {duplicate: false, hint: "another hint", player: "1234"},
-        {duplicate: false, hint: "a hint", player: "2345"},
-    ]
-    const mockTurn: Turn = {
-        guess: "some guess", hints: mockHints, reveal: true, secretWord: "Secret Word", result: "success"
-    }
-    const mockPlayers: Player[] = [
-        {
-            id: "1234",
-            isAdmin: true,
-            isGuessing: false,
-            isMe: false,
-            isReady: true,
-            name: "Player Hinter Admin",
-            color: "blue"
-        },
-        {
-            id: "2345",
-            isAdmin: false,
-            isGuessing: false,
-            isMe: false,
-            isReady: true,
-            name: "Player Hinter 1",
-            color: "purple"
-        },
-        {
-            id: "3456",
-            isAdmin: false,
-            isGuessing: false,
-            isMe: true,
-            isReady: true,
-            name: "PLayer Hinter 2",
-            color: "red"
-        },
-        {
-            id: "4567",
-            isAdmin: false,
-            isGuessing: true,
-            isMe: false,
-            isReady: true,
-            name: "Player Guesser",
-            color: "orange"
-        },
-    ]
-
-    const mockGameStatusProps = {
-        currentRound: 2,
-        maxRounds: 5,
-        currentTurn: 5,
-        maxTurns: 13,
-        points: 4
-    }
-
-    const mockHinterProps = {
-        secretWord: "Big Secret Word",
-        onHint: (e: any, hint: string) => console.log(hint),
-        reveal: true,
-        hints: mockHints,
-        me: mockPlayers.find(p => p.isMe)!
-    }
-
-    const mockGuesserProps = {
-        onGuess: (e: any, hint: string) => console.log(hint),
-        onSkip: (e: any) => console.log("SKIPPING"),
-        reveal: true,
-        hints: mockHints,
-        me: mockPlayers.find(p => p.isMe)!,
-    }
-
-    const mockMe: Player = {
-        id: "playerMe1",
-        isAdmin: false,
-        isGuessing: false,
-        isMe: true,
-        isReady: true,
-        name: "Me the Great"
-    }
-
-    const mockRounds: Round[] = [
-        // {currentTurn: 3, points: 13, turns: [mockTurn], showRoundResults: true}
-        {currentTurn: 3, points: 13, turns: [], showRoundResults: true}
-    ]
-
-    const mockLobbyParams = {
-        players: mockPlayers,
-        me: mockMe,
-        onReady: () => console.log("ready")
-    }
-
-    const mockResults = [
-        13,
-        12,
-        6,
-        11
-    ]
 
     const scoreDescription = (score: number): ScoreDescription => {
         const scoreDescriptions = [
@@ -442,74 +329,17 @@ export function Home2() {
         mockRolesAnnouncement: {useMock: true, visible: false},
         mockRoundAnnouncement: {useMock: true, visible: false},
         mockTurnAnnouncement: {useMock: true, visible: false},
+        mockGameOverAnnouncement: {useMock: true, visible: false},
+
         mockGameStatus: {useMock: true, visible: true},
         mockTimer: {useMock: true, visible: true},
     }
-
     const [mockSettings, setMockSettings] = useState(mockSettingsInitial);
-
-    function allMocksHide(settings: any, ...exceptions: string[]) {
-        const newMockSettings = {...settings};
-        Object.keys(newMockSettings).forEach((key: string) => {
-            if (exceptions.includes(key)) {
-                newMockSettings[key].useMock = true;
-                newMockSettings[key].visible = false;
-            }
-
-        })
-        return newMockSettings;
-    }
-
-    const showLobby = () => setMockSettings({...(allMocksHide(mockSettings, "mockSocket", "mockGame")), mockLobby: {useMock: true, visible: true}})
-    const showStart = () => setMockSettings({...(allMocksHide(mockSettings, "mockLobby", "mockGame")), mockSocket: {useMock: true, visible: true}})
-    const showGame = () => setMockSettings({...(allMocksHide(mockSettings, "mockSocket", "mockLobby")), mockGame: {useMock: true, visible: true}})
-    const playerInfoToggle = () => setMockSettings({...mockSettings, mockPlayerInfo: {useMock: true, visible: !mockSettings.mockPlayerInfo.visible}})
-    const playerAreaToggle = () => setMockSettings({...mockSettings, mockPlayerArea: {useMock: true, visible: !mockSettings.mockPlayerArea.visible}})
-    const hinterToggle = () => setMockSettings({...mockSettings, mockHinter: {useMock: true, visible: !mockSettings.mockHinter.visible}})
-    const guesserToggle = () => setMockSettings({...mockSettings, mockGueser: {useMock: true, visible: !mockSettings.mockGueser.visible}})
-    const turnResultsToggle = () => setMockSettings({...mockSettings, mockTurnResults: {useMock: true, visible: !mockSettings.mockTurnResults.visible}})
-    const roundResultsToggle = () => setMockSettings({...mockSettings, mockRoundResults: {useMock: true, visible: !mockSettings.mockRoundResults.visible}})
-    const roleAnnouncementToggle = () => setMockSettings({...mockSettings, mockRolesAnnouncement: {useMock: true, visible: !mockSettings.mockRolesAnnouncement.visible}})
-    const roundAnnouncementToggle = () => setMockSettings({...mockSettings, mockRoundAnnouncement: {useMock: true, visible: !mockSettings.mockRoundAnnouncement.visible}})
-    const turnAnnouncementToggle = () => setMockSettings({...mockSettings, mockTurnAnnouncement: {useMock: true, visible: !mockSettings.mockTurnAnnouncement.visible}})
-    const gameStatusToggle = () => setMockSettings({...mockSettings, mockGameStatus: {useMock: true, visible: !mockSettings.mockGameStatus.visible}})
-    const timerToggle = () => setMockSettings({...mockSettings, mockTimer: {useMock: true, visible: !mockSettings.mockTimer.visible}})
-    const getStyle = (key: string) => mockSettings[key].visible ? "green" : "red"
     return (
         <div className={`home ${styles.home}`}>
-            <button onClick={showStart}>show start</button>
-            <button onClick={showLobby}>show lobby</button>
-            <button onClick={showGame}>show game</button>
-            {mockSettings.mockGame.visible &&
-            <div>
-                <button style={{color: getStyle("mockPlayerInfo")}} onClick={playerInfoToggle}>PlayerInfo</button>
-                <button style={{color: getStyle("mockPlayerArea")}} onClick={playerAreaToggle}>PlayerArea</button>
-                <button style={{color: getStyle("mockHinter")}} onClick={hinterToggle}>Hinter</button>
-                <button style={{color: getStyle("mockGueser")}} onClick={guesserToggle}>Guesser</button>
-                <button style={{color: getStyle("mockTurnResults")}} onClick={turnResultsToggle}>TurnResult</button>
-                <button style={{color: getStyle("mockRoundResults")}} onClick={roundResultsToggle}>RoundResult</button>
-                <button style={{color: getStyle("mockRolesAnnouncement")}} onClick={roleAnnouncementToggle}>roleAnnouncement</button>
-                <button style={{color: getStyle("mockRoundAnnouncement")}} onClick={roundAnnouncementToggle}>roundAnnouncement</button>
-                <button style={{color: getStyle("mockTurnAnnouncement")}} onClick={turnAnnouncementToggle}>turnAnnouncement</button>
-                <button style={{color: getStyle("mockGameStatus")}} onClick={gameStatusToggle}>gameStatus</button>
-                <button style={{color: getStyle("mockTimer")}} onClick={timerToggle}>timer</button>
-            </div>
-
-            }
+            <MockToggler mockSettings={mockSettings} setMockSettings={setMockSettings}/>
             <div className='header'>
-                <div className={styles.title}>
-                    <span style={{color: color()}}>T</span><span style={{color: color()}}>H</span><span
-                    style={{color: color()}}>E </span>
-                    <span style={{color: color()}}>O</span><span style={{color: color()}}>N</span><span
-                    style={{color: color()}}>L</span><span style={{color: color()}}>Y </span>
-                    <span style={{color: color()}}>O</span><span style={{color: color()}}>N</span><span
-                    style={{color: color()}}>E </span>
-                    <span style={{color: color()}}>C</span><span style={{color: color()}}>L</span><span
-                    style={{color: color()}}>O</span><span style={{color: color()}}>N</span><span
-                    style={{color: color()}}>E </span>
-                    <span style={{color: color()}}>G</span><span style={{color: color()}}>A</span><span
-                    style={{color: color()}}>M</span><span style={{color: color()}}>E</span>
-                </div>
+                <Header/>
             </div>
             {(mockSettings.mockSocket.useMock ? mockSettings.mockSocket.visible : !socket) &&
             <div className="init">
@@ -534,12 +364,12 @@ export function Home2() {
             <div className="game">
                 <div className="playerInfo">
                     {(mockSettings.mockPlayerInfo.useMock ? mockSettings.mockPlayerInfo.visible : mockSettings.mockPlayerInfo.visible) &&
-                        <div>
-                            {mockSettings.mockPlayerInfo.useMock ?
-                                <PlayerInfo players={mockPlayers} turn={mockTurn}/>
-                                : <PlayerInfo players={players}
-                                              turn={rounds.length > 0 ? rounds[currentRound].turns[rounds[currentRound].currentTurn] : undefined}/>}
-                        </div>
+                    <div>
+                        {mockSettings.mockPlayerInfo.useMock ?
+                            <PlayerInfo players={mockPlayers} turn={mockTurn}/>
+                            : <PlayerInfo players={players}
+                                          turn={rounds.length > 0 ? rounds[currentRound].turns[rounds[currentRound].currentTurn] : undefined}/>}
+                    </div>
                     }
                 </div>
                 <div className="playArea">
@@ -621,6 +451,11 @@ export function Home2() {
                                 : <Announcement type={"Turn"}
                                                 announcement={`${rounds[currentRound].currentTurn + 1}`}/>
                             }
+                        </Overlay>
+                        }
+                        {(mockSettings.mockGameOverAnnouncement.useMock ? mockSettings.mockGameOverAnnouncement.visible : announceGameOver) &&
+                        <Overlay>
+                                <Announcement type={"Game"} announcement={"Over"}/>
                         </Overlay>
                         }
                     </div>

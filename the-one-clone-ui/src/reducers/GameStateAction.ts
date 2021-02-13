@@ -16,3 +16,4 @@ export type GameStateAction =
     | { type: 'showRoles', payload: {showRoles: boolean}}
     | { type: 'announceRound', payload: {announceRound: boolean}}
     | { type: 'announceTurn', payload: {announceTurn: boolean}}
+    | { type: 'announceGameOver', payload: {gameOver: boolean}}

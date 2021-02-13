@@ -1,4 +1,5 @@
 import {Namespace, Socket} from "socket.io";
+import internal from "stream";
 
 
 interface Player {
@@ -170,7 +171,7 @@ class Room2 {
             if (!this.store.clients.length) {
                 this._clearTimeouts();
                 console.info(`[GAME OVER] All players disconnected from ${this.roomId}`);
-                // this.gameOver()
+                this._gameOver()
             }
             if (disconnectedPlayer) this._emitPlayerDisconnected(disconnectedPlayer)
         })
@@ -390,7 +391,7 @@ class Room2 {
     _guessToNewTurnTransition() {
         this._clearTimeouts()
         this._revealTurnResult()
-        !this._isGameOver() ? this._prepAndStartNewTurn() : setTimeout(this._gameOver.bind(this), 2000)
+        !this._isGameOver() ? this._prepAndStartNewTurn() : this._gameOver()
     }
 
     _isGameOver(): boolean {
@@ -426,6 +427,13 @@ class Room2 {
     }
 
     _gameOver() {
+        const intervalMs = 2000;
+        const timingFor = (event: string) => new Map([["announce", intervalMs], ["transition", intervalMs * 2]]).get(event)
+        setTimeout(this._announceGameOver.bind(this), timingFor("announce"))
+        setTimeout(this._doGameOver.bind(this), timingFor("transition"));
+    }
+
+    _doGameOver() {
         const {clients, gameState}: { clients: Player[], gameState: GameState } = this.store;
         clients.forEach((client: Player) => {
             client.isGuessing = false;
@@ -437,6 +445,14 @@ class Room2 {
         this.emitAllPlayers(clients);
         const results = gameState.rounds.map(round => round.points)
         this._emitGameResults(results);
+    }
+
+    _announceGameOver() {
+      this._emitAnnounceGameOver()
+    }
+
+    _emitAnnounceGameOver() {
+        this.io.to(this.roomId).emit('game-over-announcement', {gameOver: true})
     }
 
     _emitGameOver(inLobby: boolean) {

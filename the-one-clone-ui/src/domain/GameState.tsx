@@ -12,4 +12,5 @@ export interface GameState {
     showRoles: boolean
     announceRound: boolean
     announceTurn: boolean
+    announceGameOver: boolean
 }
