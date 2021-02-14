@@ -12,7 +12,7 @@ test('can add hints to a turn in a round', () => {
         {player: "playerId2", hint: "hint2", duplicate: false}
     ]
     const turns: Turn[] = [
-        {hints: [], reveal: false, secretWord: "secret", guess: "", result: ""}
+        {hints: [], reveal: false, secretWord: "secret", guess: "", result: "", deduplication: false}
     ]
     const rounds: Round[] = [
         {turns, points: 0, currentTurn: 0}
@@ -26,7 +26,12 @@ test('can add hints to a turn in a round', () => {
         hintTimeout: 0,
         guessTimeout: 0,
         currentRound: 0,
-        results: []
+        results: [],
+        showRoles: false,
+        announceDeduplication: false,
+        announceGameOver: false,
+        announceRound: false,
+        announceTurn: false
     };
     const updateAction: GameStateAction = {type: 'addHints', payload: {hints: hintsExpected, currentRound: 0, currentTurn: 0}};
     const updatedState = gameStateReducer(initialState, updateAction);
@@ -35,7 +40,7 @@ test('can add hints to a turn in a round', () => {
     expect(updatedState.rounds[0].turns[0].hints).toEqual(hintsExpected);
 });
 test('can add turn to a round', () => {
-    const turn: Turn = {hints: [], reveal: false, secretWord: "secret", guess: "", result: ""}
+    const turn: Turn = {hints: [], reveal: false, secretWord: "secret", guess: "", result: "", deduplication: false}
 
     const rounds: Round[] = [
         {turns: [], points: 0, currentTurn: 0}
@@ -48,7 +53,12 @@ test('can add turn to a round', () => {
         hintTimeout: 0,
         guessTimeout: 0,
         currentRound: 0,
-        results: []
+        results: [],
+        showRoles: false,
+        announceDeduplication: false,
+        announceGameOver: false,
+        announceRound: false,
+        announceTurn: false
     };
     const updateAction: GameStateAction = {type: 'addTurn', payload: {turn, currentRound: 0, currentTurn: 0}};
     const updatedState = gameStateReducer(initialState, updateAction);

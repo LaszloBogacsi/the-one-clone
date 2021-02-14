@@ -25,10 +25,10 @@ const shuffleArray = (array: string[]) => {
     }
     return array;
 }
-const randomColorsInitial = useMemo(() => shuffleArray(colors), [colors.length])
 
 
 export default () => {
+    const randomColorsInitial = useMemo(() => shuffleArray(colors), [colors.length])
     const [randomColors, setRandomColors] = useState(randomColorsInitial)
     return randomColors
 }

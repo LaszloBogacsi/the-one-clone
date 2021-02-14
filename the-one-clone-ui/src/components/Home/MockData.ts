@@ -76,7 +76,7 @@ export const mockGuesserProps = {
 
 export const mockMe: Player = {
     id: "playerMe1",
-    isAdmin: true,
+    isAdmin: false,
     isGuessing: false,
     isMe: true,
     isReady: true,

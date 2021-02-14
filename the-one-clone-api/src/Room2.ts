@@ -147,7 +147,7 @@ class Room2 {
             console.info(`[INFO] Submitting hint of client ${this.socket.id}`);
             if (allHintersHinted) {
                 this._clearTimeouts()
-                this._hintToGuessTransition()
+                this._hintToDedupeTransition()
             }
         })
         this.socket.on('on-player-guess-submit', (data: { guess: string }) => {
@@ -342,26 +342,25 @@ class Room2 {
         }, 1000)
     }
 
-    _hintToGuessTransition() {
-        this._clearTimeouts()
-        this._hintEnd()
-        this._markDuplicatesForCurrentTurn()
-        this._revealHints()
-        this._startNewGuess()
-    }
-
     _hintToDedupeTransition() {
         this._clearTimeouts()
         this._hintEnd()
         this._markDuplicatesForCurrentTurn()
-        this._startDeduplication()
+        this._deduplicate()
 
     }
 
-    _startDeduplication() {
-        this._revealHintsToHinters();
-        this._announceDeduplication();
-        this._startCountDown(this.store.gameState.gameConfig.dedupeTimeout / 1000, this._dedupeToGuessTransition.bind(this));
+    _deduplicate() {
+        setTimeout(() => {
+            this._revealHintsToHinters();
+            this._announceDeduplication();
+        })
+        setTimeout(() => {
+            this._startDeduplication();
+            this._startCountDown(this.store.gameState.gameConfig.dedupeTimeout / 1000, this._dedupeToGuessTransition.bind(this));
+        }, 2000)
+
+
     }
 
     _dedupeToGuessTransition() {
@@ -380,6 +379,14 @@ class Room2 {
     }
 
     _announceDeduplication() {
+        this._emitAnnounceDeduplication()
+    }
+
+    _emitAnnounceDeduplication() {
+        this.io.to(this.roomId).emit('announce-deduplication', {message: "deduplication start"})
+    }
+
+    _startDeduplication() {
         const {gameState}: { gameState: GameState } = this.store;
         const {rounds, currentRound} = gameState;
         const round: Round = rounds[currentRound]

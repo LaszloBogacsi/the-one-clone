@@ -3,19 +3,20 @@ import {Player} from "../../domain/Player";
 import styles from './styles.module.css';
 interface RolesAnnouncementProps {
     me?: Player;
-    guesser?: Player;
+    role?: Player;
+    messageText: string
 }
 
 export default (props: RolesAnnouncementProps) => {
-    const {me, guesser} = props;
-    const amIGuessing = me?.id === guesser?.id;
-    const proNoun = amIGuessing ? 'are' : 'is'
+    const {me, role, messageText} = props;
+    const amIInTheRole = me?.id === role?.id;
+    const proNoun = amIInTheRole ? 'are' : 'is'
 
-    const announcement = me?.id === guesser?.id ? "You " : `${guesser?.name} `
+    const announcement = me?.id === role?.id ? "You " : `${role?.name} `
     return (
         <div className={styles.rolesAnnouncement}>
-            {guesser &&
-            <h1><span className={`${styles.highlight} ${guesser.color}`}>{announcement}</span>{proNoun} guessing</h1>
+            {role &&
+            <h1><span className={`${styles.highlight} ${role.color}`}>{announcement}</span>{proNoun} {messageText}</h1>
             }
         </div>
     )

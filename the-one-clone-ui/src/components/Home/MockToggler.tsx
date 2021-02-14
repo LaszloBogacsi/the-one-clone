@@ -82,6 +82,10 @@ export default (props: MockTogglerProps) => {
         ...mockSettings,
         mockGameOverAnnouncement: {useMock: true, visible: !mockSettings.mockGameOverAnnouncement.visible}
     })
+    const deduplicationAnnouncementToggle = () => setMockSettings({
+        ...mockSettings,
+        mockDeduplicationAnnouncement: {useMock: true, visible: !mockSettings.mockDeduplicationAnnouncement.visible}
+    })
     const gameStatusToggle = () => setMockSettings({
         ...mockSettings,
         mockGameStatus: {useMock: true, visible: !mockSettings.mockGameStatus.visible}
@@ -129,6 +133,9 @@ export default (props: MockTogglerProps) => {
                     </button>
                     <button style={{color: getStyle("mockTurnAnnouncement")}}
                             onClick={turnAnnouncementToggle}>turnAnnouncement
+                    </button>
+                    <button style={{color: getStyle("mockDeduplicationAnnouncement")}}
+                            onClick={deduplicationAnnouncementToggle}>deduplicationAnnouncement
                     </button>
                     <button style={{color: getStyle("mockGameOverAnnouncement")}}
                             onClick={gameOverAnnouncementToggle}>gameOverAnnouncement

@@ -77,6 +77,7 @@ export function Home2() {
         announceRound,
         announceTurn,
         announceGameOver,
+        announceDeduplication
     }, dispatchGameAction] = useReducer(gameStateReducer, initialGameState)
     const [players, dispatchPlayerAction] = useReducer(playersReducer, [] as Player[])
     const [countdown, dispatchCountdownAction] = useReducer(countdownReducer, hintTimeout)
@@ -118,14 +119,15 @@ export function Home2() {
                 announceRound: false,
                 announceTurn: false,
                 announceGameOver: false,
+                announceDeduplication: false,
             })
 
             dispatchGameAction({type: "setGameState", payload: toGameState(data.gameState)})
         };
         const lobbyStateHandler = (data: { inLobby: boolean }) => {
             console.log(data)
-            dispatchGameAction({type: 'setInLobby', payload: data.inLobby});
             dispatchGameAction({type: 'resetGameState', payload: {}});
+            dispatchGameAction({type: 'setInLobby', payload: data.inLobby});
         }
         const gameOverAnnouncementHandler = (data: { gameOver: boolean }) => {
             console.log(data)
@@ -158,10 +160,14 @@ export function Home2() {
         const endHintHandler = (data: { message: string }) => {
             console.log(data)
         };
-        const startDeduplicationHandler = (data: { deduplication: boolean, currentRound: number, currentTurn: number }) => dispatchGameAction({
-            type: 'setDeduplication',
-            payload: {...data}
+        const announceDeduplicationHandler = (data: { message: string }) => dispatchGameAction({
+            type: 'announceDeduplication',
+            payload: {announceDeduplication: true}
         });
+        const startDeduplicationHandler = (data: { deduplication: boolean, currentRound: number, currentTurn: number }) => {
+            dispatchGameAction({type: 'setDeduplication', payload: {...data}});
+            dispatchGameAction({type: 'announceDeduplication', payload: {announceDeduplication: false}});
+        }
         const turnHintsHandler = (data: { hints: Hint[], currentRound: number, currentTurn: number }) => dispatchGameAction({
             type: 'addHints',
             payload: {...data}
@@ -202,6 +208,7 @@ export function Home2() {
         socket?.on('start-turn', startTurnHandler)
         socket?.on('countdown', countdownHandler)
         socket?.on('end-hint', endHintHandler)
+        socket?.on('announce-deduplication', announceDeduplicationHandler)
         socket?.on('start-deduplication', startDeduplicationHandler)
         socket?.on('turn-hints', turnHintsHandler)
         socket?.on('turn-hints-reveal', turnHintsRevealHandler)
@@ -223,6 +230,7 @@ export function Home2() {
             socket?.off('start-turn', startTurnHandler)
             socket?.off('countdown', countdownHandler)
             socket?.off('end-hint', endHintHandler)
+            socket?.off('announce-deduplication', announceDeduplicationHandler)
             socket?.off('start-deduplication', startDeduplicationHandler)
             socket?.off('turn-hints', turnHintsHandler)
             socket?.off('turn-hints-reveal', turnHintsRevealHandler)
@@ -290,10 +298,14 @@ export function Home2() {
         return results.map(result => ({...scoreDescription(result), result}))
     }
 
-
     const onToggleAsDuplicate = (id: number) => {
         socket!.emit("toggle-hint-as-duplicate", {hintId: id})
     }
+
+    /*
+    Deduplication manual submit
+    Announce guessing and remove admin controls for dedupe.
+     */
 
     return (
         <div className={`home ${styles.home}`}>
@@ -399,8 +411,8 @@ export function Home2() {
                         <Overlay>
                             {mockSettings.mockRolesAnnouncement.useMock ?
                                 <RolesAnnouncement me={mockPlayers.find(p => p.isMe)}
-                                                   guesser={mockPlayers.find(p => p.isGuessing)}/>
-                                : <RolesAnnouncement me={me} guesser={players.find(p => p.isGuessing)}/>
+                                                   role={mockPlayers.find(p => p.isGuessing)} messageText={"guessing"}/>
+                                : <RolesAnnouncement me={me} role={players.find(p => p.isGuessing)} messageText={"guessing"}/>
                             }
                         </Overlay>
                         }
@@ -426,6 +438,20 @@ export function Home2() {
                         {(mockSettings.mockGameOverAnnouncement.useMock ? mockSettings.mockGameOverAnnouncement.visible : announceGameOver) &&
                         <Overlay>
                             <Announcement type={"Game"} announcement={"Over"}/>
+                        </Overlay>
+                        }
+                        {(mockSettings.mockDeduplicationAnnouncement.useMock ? mockSettings.mockDeduplicationAnnouncement.visible : announceDeduplication) &&
+                        <Overlay>
+                            {mockSettings.mockTurnAnnouncement.useMock ?
+                                <RolesAnnouncement
+                                    me={mockMe}
+                                    role={mockPlayers.find(p => p.isAdmin)}
+                                    messageText={"removing duplicate hints"}/>
+                                : <RolesAnnouncement
+                                    me={me}
+                                    role={players.find(p => p.isAdmin)}
+                                    messageText={"removing duplicate hints"}/>
+                            }
                         </Overlay>
                         }
                     </div>
