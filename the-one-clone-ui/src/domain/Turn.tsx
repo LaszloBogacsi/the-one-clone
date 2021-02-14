@@ -1,6 +1,7 @@
 import {Hint} from "./Hint";
 
 export interface Turn {
+    deduplication: boolean;
     secretWord: string
     hints: Hint[]
     reveal: boolean

@@ -25,7 +25,7 @@ export default (props: PlayerInfoProps) => {
                             : <FontAwesomeIcon className={player.color} icon={faUser}/>
                         }
                         <div className={styles.playerName}>
-                            {player.name}
+                            {player.name} {player.isMe && "(me)"}
                         </div>
                         {!player.isGuessing ?
                             ( turn && hasHinted(player) ?

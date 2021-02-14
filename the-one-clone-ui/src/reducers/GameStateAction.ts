@@ -17,3 +17,5 @@ export type GameStateAction =
     | { type: 'announceRound', payload: {announceRound: boolean}}
     | { type: 'announceTurn', payload: {announceTurn: boolean}}
     | { type: 'announceGameOver', payload: {gameOver: boolean}}
+    | { type: 'setDeduplication', payload: {deduplication: boolean, currentRound: number, currentTurn: number}}
+    | { type: 'resetGameState', payload: {}}

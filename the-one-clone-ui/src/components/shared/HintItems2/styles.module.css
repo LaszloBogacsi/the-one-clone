@@ -1,0 +1,52 @@
+
+
+.hintItems {
+    display: flex;
+    flex-flow: row wrap;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    max-width: max-content;
+}
+
+.hintItemContainer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hintItem {
+    background-color: var(--backgroundDark);
+    padding: 1rem;
+    margin: 0.5rem 1rem;
+    border-radius: 6px;
+    width: 100%;
+}
+
+.duplicate {
+    text-decoration: line-through;
+
+}
+
+.buttonGroup {
+    white-space: nowrap;
+}
+
+.buttonGroup button {
+    background: none;
+    border: none;
+    margin-right: 1rem;
+    font-size: xx-large;
+    line-height: 1rem;
+}
+
+.correct {
+    color: var(--gameAccentGreen);
+}
+
+.incorrect {
+    color: var(--gameAccentRed);
+}
+
+.disabled {
+
+}

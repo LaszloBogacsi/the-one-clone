@@ -16,6 +16,7 @@ class Turn {
     public reveal = false
     public guess = ""
     public result: string | undefined;
+    public deduplication = false;
 
     constructor(chosenWord: string) {
         this.secretWord = chosenWord
@@ -47,6 +48,7 @@ class GameConfig {
         public maxRounds: number,
         public hintTimeout: number,
         public guessTimeout: number,
+        public dedupeTimeout: number,
         public maxTurn: number) {
     }
 }
@@ -159,6 +161,15 @@ class Room2 {
             this._clearTimeouts()
             this._guessToNewTurnTransition()
         })
+
+        this.socket.on("toggle-hint-as-duplicate", (data: {hintId: number}) => {
+            const {gameState}: { gameState: GameState } = this.store;
+            const {rounds, currentRound} = gameState;
+            const round: Round = rounds[currentRound]
+            const turn: Turn = round.turns[round.currentTurn]
+            turn.hints[data.hintId].duplicate = !turn.hints[data.hintId].duplicate;
+            this._emitHints(turn.hints, currentRound, round.currentTurn)
+        })
     }
 
     onDisconnect() {
@@ -211,6 +222,7 @@ class Room2 {
             2,
             6_000,
             6_000,
+            10_000,
             2
         )
         this.store.gameState = new GameState(config)
@@ -270,7 +282,6 @@ class Room2 {
             clients.forEach((client: Player) => client.isGuessing = false)
             const guesserId = (round.currentTurn + 1) % clients.length;
             clients[guesserId].isGuessing = true
-
             const guesser: Player = clients[guesserId];
             this._emitRoleGeneral(guesser)
             console.info(`[Roles] announcing guesser is ${guesser.playerName}, in ${this.roomId} room`);
@@ -307,7 +318,7 @@ class Room2 {
     _startNewTurn() {
         console.info(`[NEWTURN] New Turn starting, in ${this.roomId} room`);
         this._emitStartNewTurn()
-        this._startCountDown(this.store.gameState.gameConfig.hintTimeout / 1000, this._hintToGuessTransition.bind(this))
+        this._startCountDown(this.store.gameState.gameConfig.hintTimeout / 1000, this._hintToDedupeTransition.bind(this))
     }
 
     _emitNewTurn(turn: Turn, currentRound: any, currentTurn: number) {
@@ -339,6 +350,26 @@ class Room2 {
         this._startNewGuess()
     }
 
+    _hintToDedupeTransition() {
+        this._clearTimeouts()
+        this._hintEnd()
+        this._markDuplicatesForCurrentTurn()
+        this._startDeduplication()
+
+    }
+
+    _startDeduplication() {
+        this._revealHintsToHinters();
+        this._announceDeduplication();
+        this._startCountDown(this.store.gameState.gameConfig.dedupeTimeout / 1000, this._dedupeToGuessTransition.bind(this));
+    }
+
+    _dedupeToGuessTransition() {
+        this._clearTimeouts()
+        this._revealHints()
+        this._startNewGuess()
+    }
+
     _hintEnd() {
         clearInterval(this.store.countDownInterval)
         this._emitHintEnd()
@@ -348,13 +379,25 @@ class Room2 {
         this.io.to(this.roomId).emit('end-hint', {message: "hint end"})
     }
 
+    _announceDeduplication() {
+        const {gameState}: { gameState: GameState } = this.store;
+        const {rounds, currentRound} = gameState;
+        const round: Round = rounds[currentRound]
+        const turn: Turn = round.turns[round.currentTurn]
+        turn.deduplication = true;
+        this._emitStartDeduplication(turn.deduplication, currentRound, round.currentTurn)
+    }
+
+    _emitStartDeduplication(deduplication: boolean, currentRound: number, currentTurn: number) {
+        this.io.to(this.roomId).emit('start-deduplication', {deduplication, currentRound, currentTurn})
+    }
+
     _revealHints() {
         const {gameState}: { gameState: GameState } = this.store;
         const {rounds, currentRound} = gameState;
         const round: Round = rounds[currentRound]
         const turn: Turn = round.turns[round.currentTurn]
         this._emitHints(turn.hints, currentRound, round.currentTurn)
-        // check for duplicates bit
         turn.reveal = true
         this._emitReveal(turn.reveal, currentRound, round.currentTurn)
     }
@@ -365,6 +408,29 @@ class Room2 {
 
     _emitReveal(reveal: boolean, currentRound: number, currentTurn: number) {
         this.io.to(this.roomId).emit('turn-hints-reveal', {reveal, currentRound, currentTurn})
+    }
+
+    _revealHintsToHinters() {
+        const {gameState}: { gameState: GameState } = this.store;
+        const {rounds, currentRound} = gameState;
+        const round: Round = rounds[currentRound]
+        const turn: Turn = round.turns[round.currentTurn]
+        this._emitHintsToHinters(turn.hints, currentRound, round.currentTurn)
+        turn.reveal = true
+        this._emitRevealToHinters(turn.reveal, currentRound, round.currentTurn)
+    }
+
+    _emitHintsToHinters(hints: Hint[], currentRound: number, currentTurn: number) {
+        this.store.clients.filter((client: Player) => !client.isGuessing).forEach((client: Player) => {
+            console.log("emitting to " + client.playerName);
+            if (this.io.sockets.get(client.id)) this.io.sockets.get(client.id)!.emit("turn-hints", {hints, currentRound, currentTurn})
+        })
+    }
+
+    _emitRevealToHinters(reveal: boolean, currentRound: number, currentTurn: number) {
+        this.store.clients.filter((client: Player) => !client.isGuessing).forEach((client: Player) => {
+            if (this.io.sockets.get(client.id)) this.io.sockets.get(client.id)!.emit('turn-hints-reveal', {reveal, currentRound, currentTurn})
+        })
     }
 
     _markDuplicatesForCurrentTurn() {

@@ -6,9 +6,12 @@ import {Round} from "../../domain/Round";
 export const mockHints: Hint[] = [
     {duplicate: false, hint: "another hint", player: "1234"},
     {duplicate: false, hint: "a hint", player: "2345"},
+    {duplicate: false, hint: "a some hint", player: "3456"},
+    {duplicate: true, hint: "a duplicate hint", player: "4567"},
+    {duplicate: true, hint: "a duplicate hint", player: "5678"},
 ]
 export const mockTurn: Turn = {
-    guess: "some guess", hints: mockHints, reveal: true, secretWord: "Secret Word", result: "success"
+    guess: "some guess", hints: mockHints, reveal: true, secretWord: "Secret Word", result: "success", deduplication: true
 }
 export const mockPlayers: Player[] = [
     {
@@ -60,8 +63,6 @@ export const mockGameStatusProps = {
 export const mockHinterProps = {
     secretWord: "Big Secret Word",
     onHint: (e: any, hint: string) => console.log(hint),
-    reveal: true,
-    hints: mockHints,
     me: mockPlayers.find(p => p.isMe)!
 }
 
@@ -75,7 +76,7 @@ export const mockGuesserProps = {
 
 export const mockMe: Player = {
     id: "playerMe1",
-    isAdmin: false,
+    isAdmin: true,
     isGuessing: false,
     isMe: true,
     isReady: true,

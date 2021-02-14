@@ -1,9 +1,47 @@
 import {GameState} from "../domain/GameState";
 import {GameStateAction} from "./GameStateAction";
 
+
+export const initialGameState: GameState = {
+    rounds: [],
+    currentRound: -1,
+    inLobby: true,
+    guessTimeout: 0,
+    hintTimeout: 0,
+    maxRound: 0,
+    maxTurn: 0,
+    results: [],
+    showRoles: false,
+    announceRound: false,
+    announceTurn: false,
+    announceGameOver: false,
+};
+
 export function gameStateReducer(state: GameState, action: GameStateAction): GameState {
     const {rounds} = state;
     switch (action.type) {
+        case "resetGameState":
+            return {
+                ...initialGameState,
+                results: state.results
+            }
+        case "setDeduplication":
+            return {
+                ...state,
+                rounds: rounds.map((round, index) => {
+                    const {currentRound, currentTurn, deduplication} = action.payload;
+                    if (index === currentRound) {
+                        round.turns.map((turn, index) => {
+                            if (index === currentTurn) {
+                                turn.deduplication = deduplication;
+                                return turn;
+                            }
+                            return turn;
+                        })
+                    }
+                    return round;
+                }),
+            }
         case "announceGameOver":
             return {
                 ...state,

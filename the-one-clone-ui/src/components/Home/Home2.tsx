@@ -1,4 +1,4 @@
-import React, {ChangeEvent, useEffect, useMemo, useReducer, useState} from "react";
+import React, {useEffect, useReducer, useState} from "react";
 import io, {Socket} from "socket.io-client";
 import {useLocation} from "react-router-dom";
 import {Player} from "../../domain/Player";
@@ -6,7 +6,7 @@ import {Hint} from "../../domain/Hint";
 import {Turn} from "../../domain/Turn";
 import {Round} from "../../domain/Round";
 import {GameState} from "../../domain/GameState";
-import {gameStateReducer} from "../../reducers/GameStateReducer";
+import {gameStateReducer, initialGameState} from "../../reducers/GameStateReducer";
 import {playersReducer} from "../../reducers/PlayersReducer";
 import {countdownReducer} from "../../reducers/CountdownReducer";
 import {StartGame} from "../StartGame/StartGame";
@@ -30,12 +30,17 @@ import {
     mockGameStatusProps,
     mockGuesserProps,
     mockHinterProps,
+    mockHints,
     mockLobbyParams,
+    mockMe,
     mockPlayers,
     mockResults,
     mockRounds,
     mockTurn
 } from "./MockData";
+import DedupeHintItems from "../shared/DedupeHintItems/DedupeHintItems";
+import useMockData from "./useMockData";
+import useRandomColors from "./useRandomColors";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -56,21 +61,9 @@ export function Home2() {
     // INPUTS
     const [hintSecond, setHintSecond] = useState<string>();
     const [guess, setGuess] = useState<string>();
+    const randomColors = useRandomColors();
+    const {mockSettings, setMockSettings} = useMockData()
 
-    const initialGameState: GameState = {
-        rounds: [],
-        currentRound: -1,
-        inLobby: true,
-        guessTimeout: 0,
-        hintTimeout: 0,
-        maxRound: 0,
-        maxTurn: 0,
-        results: [],
-        showRoles: false,
-        announceRound: false,
-        announceTurn: false,
-        announceGameOver: false,
-    };
     const [{
         rounds,
         currentRound,
@@ -124,7 +117,7 @@ export function Home2() {
                 showRoles: false,
                 announceRound: false,
                 announceTurn: false,
-                announceGameOver: false
+                announceGameOver: false,
             })
 
             dispatchGameAction({type: "setGameState", payload: toGameState(data.gameState)})
@@ -132,6 +125,7 @@ export function Home2() {
         const lobbyStateHandler = (data: { inLobby: boolean }) => {
             console.log(data)
             dispatchGameAction({type: 'setInLobby', payload: data.inLobby});
+            dispatchGameAction({type: 'resetGameState', payload: {}});
         }
         const gameOverAnnouncementHandler = (data: { gameOver: boolean }) => {
             console.log(data)
@@ -164,6 +158,10 @@ export function Home2() {
         const endHintHandler = (data: { message: string }) => {
             console.log(data)
         };
+        const startDeduplicationHandler = (data: { deduplication: boolean, currentRound: number, currentTurn: number }) => dispatchGameAction({
+            type: 'setDeduplication',
+            payload: {...data}
+        });
         const turnHintsHandler = (data: { hints: Hint[], currentRound: number, currentTurn: number }) => dispatchGameAction({
             type: 'addHints',
             payload: {...data}
@@ -204,6 +202,7 @@ export function Home2() {
         socket?.on('start-turn', startTurnHandler)
         socket?.on('countdown', countdownHandler)
         socket?.on('end-hint', endHintHandler)
+        socket?.on('start-deduplication', startDeduplicationHandler)
         socket?.on('turn-hints', turnHintsHandler)
         socket?.on('turn-hints-reveal', turnHintsRevealHandler)
         socket?.on('turn-result', turnResultHandler)
@@ -224,6 +223,7 @@ export function Home2() {
             socket?.off('start-turn', startTurnHandler)
             socket?.off('countdown', countdownHandler)
             socket?.off('end-hint', endHintHandler)
+            socket?.off('start-deduplication', startDeduplicationHandler)
             socket?.off('turn-hints', turnHintsHandler)
             socket?.off('turn-hints-reveal', turnHintsRevealHandler)
             socket?.off('turn-result', turnResultHandler)
@@ -236,33 +236,6 @@ export function Home2() {
         }
 
     }, [socket, me])
-
-    const colors = [
-        'orange',
-        'red',
-        'pink',
-        'purple',
-        'blue',
-        'green',
-        'yellow',
-    ]
-    const shuffleArray = (array: string[]) => {
-        var currentIndex = array.length, temporaryValue, randomIndex;
-
-        // While there remain elements to shuffle...
-        while (currentIndex !== 0) {
-            // Pick a remaining element...
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex -= 1;
-
-            // And swap it with the current element.
-            temporaryValue = array[currentIndex];
-            array[currentIndex] = array[randomIndex];
-            array[randomIndex] = temporaryValue;
-        }
-        return array;
-    }
-    const randomColors = useMemo(() => shuffleArray(colors), [colors.length])
 
     useEffect(() => {
         if (players.length > 0) {
@@ -316,25 +289,12 @@ export function Home2() {
     const makeResultsWithDescription = (results: number[]) => {
         return results.map(result => ({...scoreDescription(result), result}))
     }
-    const mockSettingsInitial: { [key: string]: { useMock: boolean, visible: boolean } } = {
-        mockSocket: {useMock: true, visible: false},
-        mockLobby: {useMock: true, visible: false},
-        mockGame: {useMock: true, visible: true},
-        mockPlayerInfo: {useMock: true, visible: true},
-        mockPlayerArea: {useMock: true, visible: true},
-        mockHinter: {useMock: true, visible: true},
-        mockGueser: {useMock: true, visible: false},
-        mockTurnResults: {useMock: true, visible: false},
-        mockRoundResults: {useMock: true, visible: false},
-        mockRolesAnnouncement: {useMock: true, visible: false},
-        mockRoundAnnouncement: {useMock: true, visible: false},
-        mockTurnAnnouncement: {useMock: true, visible: false},
-        mockGameOverAnnouncement: {useMock: true, visible: false},
 
-        mockGameStatus: {useMock: true, visible: true},
-        mockTimer: {useMock: true, visible: true},
+
+    const onToggleAsDuplicate = (id: number) => {
+        socket!.emit("toggle-hint-as-duplicate", {hintId: id})
     }
-    const [mockSettings, setMockSettings] = useState(mockSettingsInitial);
+
     return (
         <div className={`home ${styles.home}`}>
             <MockToggler mockSettings={mockSettings} setMockSettings={setMockSettings}/>
@@ -375,16 +335,26 @@ export function Home2() {
                 <div className="playArea">
                     {(mockSettings.mockPlayerArea.useMock ? mockSettings.mockPlayerArea.visible : (!inLobby && rounds.length > 0)) &&
                     <div className={styles.playArea}>
-                        {(mockSettings.mockHinter.useMock ? mockSettings.mockHinter.visible : (me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0)) &&
+                        {(mockSettings.mockHinter.useMock ? mockSettings.mockHinter.visible : (me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0) && !rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication) &&
                         <div>
                             {mockSettings.mockHinter.useMock ?
                                 <Hinter{...mockHinterProps}/>
                                 : <Hinter
                                     secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
                                     onHint={onHint}
-                                    reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
-                                    hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
                                     me={me!}/>
+                            }
+                        </div>
+                        }
+                        {(mockSettings.mockHints.useMock ? mockSettings.mockHints.visible : (me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication && rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal)) &&
+                        <div>
+                            {mockSettings.mockHints.useMock ?
+                                <DedupeHintItems hints={mockHints} isAdmin={mockMe.isAdmin}
+                                                 markAsDuplicate={(h) => console.log(h)}/>
+                                :
+                                <DedupeHintItems
+                                    hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
+                                    isAdmin={me!.isAdmin} markAsDuplicate={onToggleAsDuplicate}/>
                             }
                         </div>
                         }
@@ -455,7 +425,7 @@ export function Home2() {
                         }
                         {(mockSettings.mockGameOverAnnouncement.useMock ? mockSettings.mockGameOverAnnouncement.visible : announceGameOver) &&
                         <Overlay>
-                                <Announcement type={"Game"} announcement={"Over"}/>
+                            <Announcement type={"Game"} announcement={"Over"}/>
                         </Overlay>
                         }
                     </div>

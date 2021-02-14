@@ -90,6 +90,10 @@ export default (props: MockTogglerProps) => {
         ...mockSettings,
         mockTimer: {useMock: true, visible: !mockSettings.mockTimer.visible}
     })
+    const hintsToggle = () => setMockSettings({
+        ...mockSettings,
+        mockHints: {useMock: true, visible: !mockSettings.mockHints.visible}
+    })
     const getStyle = (key: string) => mockSettings[key].visible ? "green" : "red"
 
     const inMockMode = () => Object.keys(mockSettings).every(key => mockSettings[key].useMock)
@@ -112,6 +116,7 @@ export default (props: MockTogglerProps) => {
                     <button style={{color: getStyle("mockPlayerInfo")}} onClick={playerInfoToggle}>PlayerInfo</button>
                     <button style={{color: getStyle("mockPlayerArea")}} onClick={playerAreaToggle}>PlayerArea</button>
                     <button style={{color: getStyle("mockHinter")}} onClick={hinterToggle}>Hinter</button>
+                    <button style={{color: getStyle("mockHints")}} onClick={hintsToggle}>HintsOrDedupe</button>
                     <button style={{color: getStyle("mockGueser")}} onClick={guesserToggle}>Guesser</button>
                     <button style={{color: getStyle("mockTurnResults")}} onClick={turnResultsToggle}>TurnResult</button>
                     <button style={{color: getStyle("mockRoundResults")}} onClick={roundResultsToggle}>RoundResult

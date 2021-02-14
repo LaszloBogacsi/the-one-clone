@@ -5,7 +5,7 @@ import Button from "../shared/Button/Button";
 import {faCheck} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCommentDots} from "@fortawesome/free-regular-svg-icons";
-import HintItems from "../shared/HintItems/HintItems";
+import HintItems from "../shared/HintItems2/HintItems";
 import {Player} from "../../domain/Player";
 interface GuesserProps {
     onGuess: (event: MouseEvent<HTMLButtonElement>, hint: string) => void;
