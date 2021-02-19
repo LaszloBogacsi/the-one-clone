@@ -1,5 +1,4 @@
 import {Namespace, Socket} from "socket.io";
-import internal from "stream";
 
 
 interface Player {
@@ -170,6 +169,8 @@ class Room2 {
             turn.hints[data.hintId].duplicate = !turn.hints[data.hintId].duplicate;
             this._emitHints(turn.hints, currentRound, round.currentTurn)
         })
+
+        this.socket.on("dedupe-submit", () => this._dedupeToGuessTransition())
     }
 
     onDisconnect() {
@@ -347,7 +348,6 @@ class Room2 {
         this._hintEnd()
         this._markDuplicatesForCurrentTurn()
         this._deduplicate()
-
     }
 
     _deduplicate() {
@@ -365,7 +365,7 @@ class Room2 {
 
     _dedupeToGuessTransition() {
         this._clearTimeouts()
-        this._revealHints()
+        this._revealHintsToGuesser()
         this._startNewGuess()
     }
 
@@ -436,6 +436,32 @@ class Room2 {
 
     _emitRevealToHinters(reveal: boolean, currentRound: number, currentTurn: number) {
         this.store.clients.filter((client: Player) => !client.isGuessing).forEach((client: Player) => {
+            if (this.io.sockets.get(client.id)) this.io.sockets.get(client.id)!.emit('turn-hints-reveal', {reveal, currentRound, currentTurn})
+        })
+    }
+
+    _revealHintsToGuesser() {
+        const {gameState}: { gameState: GameState } = this.store;
+        const {rounds, currentRound} = gameState;
+        const round: Round = rounds[currentRound]
+        const turn: Turn = round.turns[round.currentTurn]
+
+        const sortByDuplicatesLast = (a: Hint, b: Hint) => +a - +b;
+
+        this._emitHintsToGuesser(turn.hints.map(hint => hint.duplicate ? {...hint, hint: "Duplicate"} : hint).sort(sortByDuplicatesLast), currentRound, round.currentTurn)
+        turn.reveal = true
+        this._emitRevealToGuesser(turn.reveal, currentRound, round.currentTurn)
+    }
+
+    _emitHintsToGuesser(hints: Hint[], currentRound: number, currentTurn: number) {
+        this.store.clients.filter((client: Player) => client.isGuessing).forEach((client: Player) => {
+            console.log("emitting to " + client.playerName);
+            if (this.io.sockets.get(client.id)) this.io.sockets.get(client.id)!.emit("turn-hints", {hints, currentRound, currentTurn})
+        })
+    }
+
+    _emitRevealToGuesser(reveal: boolean, currentRound: number, currentTurn: number) {
+        this.store.clients.filter((client: Player) => client.isGuessing).forEach((client: Player) => {
             if (this.io.sockets.get(client.id)) this.io.sockets.get(client.id)!.emit('turn-hints-reveal', {reveal, currentRound, currentTurn})
         })
     }

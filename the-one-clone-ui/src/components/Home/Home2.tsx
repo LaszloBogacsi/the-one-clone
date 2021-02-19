@@ -302,8 +302,11 @@ export function Home2() {
         socket!.emit("toggle-hint-as-duplicate", {hintId: id})
     }
 
+    const onDedupeSubmit = () => {
+        socket!.emit("dedupe-submit")
+    }
+
     /*
-    Deduplication manual submit
     Announce guessing and remove admin controls for dedupe.
      */
 
@@ -362,11 +365,12 @@ export function Home2() {
                         <div>
                             {mockSettings.mockHints.useMock ?
                                 <DedupeHintItems hints={mockHints} isAdmin={mockMe.isAdmin}
-                                                 markAsDuplicate={(h) => console.log(h)}/>
+                                                 markAsDuplicate={(h) => console.log(h)}
+                                                 onSubmit={() => console.log("submitting")}/>
                                 :
                                 <DedupeHintItems
                                     hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
-                                    isAdmin={me!.isAdmin} markAsDuplicate={onToggleAsDuplicate}/>
+                                    isAdmin={me!.isAdmin} markAsDuplicate={onToggleAsDuplicate} onSubmit={onDedupeSubmit}/>
                             }
                         </div>
                         }
@@ -380,7 +384,9 @@ export function Home2() {
                                     hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
                                     onGuess={onGuess}
                                     onSkip={onSkip}
-                                    me={me!}/>
+                                    me={me!}
+                                    players={players}
+                                />
                             }
                         </div>
 
@@ -412,7 +418,8 @@ export function Home2() {
                             {mockSettings.mockRolesAnnouncement.useMock ?
                                 <RolesAnnouncement me={mockPlayers.find(p => p.isMe)}
                                                    role={mockPlayers.find(p => p.isGuessing)} messageText={"guessing"}/>
-                                : <RolesAnnouncement me={me} role={players.find(p => p.isGuessing)} messageText={"guessing"}/>
+                                : <RolesAnnouncement me={me} role={players.find(p => p.isGuessing)}
+                                                     messageText={"guessing"}/>
                             }
                         </Overlay>
                         }

@@ -1,5 +1,3 @@
-
-
 .hintItems {
     display: flex;
     flex-flow: row wrap;
@@ -23,8 +21,7 @@
 }
 
 .duplicate {
-    text-decoration: line-through;
-
+    filter: brightness(60%);
 }
 
 .buttonGroup {

@@ -13,10 +13,11 @@ interface GuesserProps {
     reveal: boolean;
     hints: Hint[];
     me: Player;
+    players: Player[]
 }
 
 export default (props: GuesserProps) => {
-    const {onGuess, onSkip, reveal, hints, me} = props;
+    const {onGuess, onSkip, reveal, hints, me, players} = props;
     const [guess, setGuess] = useState<string>("");
     const [submitted, setSubmitted] = useState(false)
     const onInputChange = (event: ChangeEvent<HTMLInputElement>) => setGuess(event.target.value || "")
@@ -28,7 +29,7 @@ export default (props: GuesserProps) => {
         reveal ?
         <div className={styles.guesser}>
 
-            <HintItems hints={hints}/>
+            <HintItems hints={hints} players={players}/>
             <div className={styles.guessInput}>
                 <input value={guess}
                        autoComplete={"off"}

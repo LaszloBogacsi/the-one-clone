@@ -72,11 +72,12 @@ export const mockGuesserProps = {
     reveal: true,
     hints: mockHints,
     me: mockPlayers.find(p => p.isMe)!,
+    players: mockPlayers,
 }
 
 export const mockMe: Player = {
     id: "playerMe1",
-    isAdmin: false,
+    isAdmin: true,
     isGuessing: false,
     isMe: true,
     isReady: true,

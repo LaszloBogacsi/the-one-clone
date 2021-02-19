@@ -1,4 +1,8 @@
-
+.hintItemsWrapper {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
 
 .hintItems {
     display: flex;
@@ -24,7 +28,8 @@
 
 .duplicate {
     text-decoration: line-through;
-
+    /*background-color: var(--backgroundLight);*/
+    filter: brightness(50%);
 }
 
 .buttonGroup {
