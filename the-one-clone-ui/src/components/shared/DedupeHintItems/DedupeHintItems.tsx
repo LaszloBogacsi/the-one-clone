@@ -4,29 +4,29 @@ import styles from './styles.module.css'
 import {faCheck, faTimes} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import Button from "../Button/Button";
+import {Player} from "../../../domain/Player";
 
-interface HintItemProps {
+interface DedupeHintItemProps {
     hints: Hint[];
-    isAdmin: boolean;
     markAsDuplicate: (index: number) => void;
     onSubmit: () => void;
+    controlsActive: boolean
+    players: Player[]
 }
 
-export default (props: HintItemProps) => {
-    const {hints, isAdmin, markAsDuplicate, onSubmit} = props;
-    const markHintAsDuplicate = (index: number) => {
-        markAsDuplicate(index);
-    }
+export default (props: DedupeHintItemProps) => {
+    const {hints, markAsDuplicate, onSubmit, controlsActive, players} = props;
+    const markHintAsDuplicate = (index: number) => markAsDuplicate(index)
     return (
         <div className={styles.hintItemsWrapper}>
             <h3>Hints</h3>
             <div className={styles.hintItems}>
                 {hints.map((hint, index) =>
                     <div className={styles.hintItemContainer}>
-                        <div className={`${styles.hintItem} ${hint.duplicate ? styles.duplicate : ""}`} key={index}>
+                        <div className={`${styles.hintItem} ${hint.duplicate ? styles.duplicate : ""} ${players.find(player => hint.player === player.id)?.color || ""}`} key={index}>
                             {hint.hint}
                         </div>
-                        {isAdmin && <div className={styles.buttonGroup}>
+                        {controlsActive && <div className={styles.buttonGroup}>
                             <button onClick={() => markHintAsDuplicate(index)} disabled={hint.duplicate}>
                                 <FontAwesomeIcon className={!hint.duplicate ? styles.incorrect : ""} icon={faTimes}/>
                             </button>
@@ -40,7 +40,7 @@ export default (props: HintItemProps) => {
             {!hints.length &&
                 <div className={styles.hintItems}>No hints were submitted</div>
             }
-            <Button onClick={onSubmit} disabled={!hints.length}>Submit</Button>
+            {controlsActive && <Button onClick={onSubmit} disabled={!hints.length}>Submit</Button>}
         </div>
     )
 }

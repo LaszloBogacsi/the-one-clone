@@ -168,10 +168,14 @@ export function Home2() {
             dispatchGameAction({type: 'setDeduplication', payload: {...data}});
             dispatchGameAction({type: 'announceDeduplication', payload: {announceDeduplication: false}});
         }
-        const turnHintsHandler = (data: { hints: Hint[], currentRound: number, currentTurn: number }) => dispatchGameAction({
-            type: 'addHints',
-            payload: {...data}
-        });
+        const turnHintsHandler = (data: { hints: Hint[], currentRound: number, currentTurn: number }) => {
+            dispatchGameAction({type: 'addHints', payload: {...data}});
+            dispatchGameAction({
+                type: 'setDeduplication',
+                payload: {deduplication: false, currentRound: data.currentRound, currentTurn: data.currentTurn}
+            });
+
+        }
         const turnHintsRevealHandler = (data: { reveal: boolean, currentRound: number, currentTurn: number }) => dispatchGameAction({
             type: 'setTurnHintsReveal',
             payload: {...data}
@@ -307,7 +311,7 @@ export function Home2() {
     }
 
     /*
-    Announce guessing and remove admin controls for dedupe.
+        Announce guessing
      */
 
     return (
@@ -350,7 +354,7 @@ export function Home2() {
                 <div className="playArea">
                     {(mockSettings.mockPlayerArea.useMock ? mockSettings.mockPlayerArea.visible : (!inLobby && rounds.length > 0)) &&
                     <div className={styles.playArea}>
-                        {(mockSettings.mockHinter.useMock ? mockSettings.mockHinter.visible : (me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0) && !rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication) &&
+                        {(mockSettings.mockHinter.useMock ? mockSettings.mockHinter.visible : (me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 && !rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication && !rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal)) &&
                         <div>
                             {mockSettings.mockHinter.useMock ?
                                 <Hinter{...mockHinterProps}/>
@@ -364,13 +368,18 @@ export function Home2() {
                         {(mockSettings.mockHints.useMock ? mockSettings.mockHints.visible : (me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication && rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal)) &&
                         <div>
                             {mockSettings.mockHints.useMock ?
-                                <DedupeHintItems hints={mockHints} isAdmin={mockMe.isAdmin}
+                                <DedupeHintItems hints={mockHints}
                                                  markAsDuplicate={(h) => console.log(h)}
-                                                 onSubmit={() => console.log("submitting")}/>
+                                                 onSubmit={() => console.log("submitting")}
+                                                 controlsActive={mockTurn.deduplication && mockMe.isAdmin}
+                                                 players={mockPlayers}/>
                                 :
                                 <DedupeHintItems
                                     hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
-                                    isAdmin={me!.isAdmin} markAsDuplicate={onToggleAsDuplicate} onSubmit={onDedupeSubmit}/>
+                                    markAsDuplicate={onToggleAsDuplicate}
+                                    onSubmit={onDedupeSubmit}
+                                    controlsActive={rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication && me!.isAdmin}
+                                    players={players}/>
                             }
                         </div>
                         }
