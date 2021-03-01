@@ -86,6 +86,10 @@ export default (props: MockTogglerProps) => {
         ...mockSettings,
         mockDeduplicationAnnouncement: {useMock: true, visible: !mockSettings.mockDeduplicationAnnouncement.visible}
     })
+    const guessStartAnnouncementToggle = () => setMockSettings({
+        ...mockSettings,
+        mockGuessStartAnnouncement: {useMock: true, visible: !mockSettings.mockGuessStartAnnouncement.visible}
+    })
     const gameStatusToggle = () => setMockSettings({
         ...mockSettings,
         mockGameStatus: {useMock: true, visible: !mockSettings.mockGameStatus.visible}
@@ -123,23 +127,13 @@ export default (props: MockTogglerProps) => {
                     <button style={{color: getStyle("mockHints")}} onClick={hintsToggle}>HintsOrDedupe</button>
                     <button style={{color: getStyle("mockGueser")}} onClick={guesserToggle}>Guesser</button>
                     <button style={{color: getStyle("mockTurnResults")}} onClick={turnResultsToggle}>TurnResult</button>
-                    <button style={{color: getStyle("mockRoundResults")}} onClick={roundResultsToggle}>RoundResult
-                    </button>
-                    <button style={{color: getStyle("mockRolesAnnouncement")}}
-                            onClick={roleAnnouncementToggle}>roleAnnouncement
-                    </button>
-                    <button style={{color: getStyle("mockRoundAnnouncement")}}
-                            onClick={roundAnnouncementToggle}>roundAnnouncement
-                    </button>
-                    <button style={{color: getStyle("mockTurnAnnouncement")}}
-                            onClick={turnAnnouncementToggle}>turnAnnouncement
-                    </button>
-                    <button style={{color: getStyle("mockDeduplicationAnnouncement")}}
-                            onClick={deduplicationAnnouncementToggle}>deduplicationAnnouncement
-                    </button>
-                    <button style={{color: getStyle("mockGameOverAnnouncement")}}
-                            onClick={gameOverAnnouncementToggle}>gameOverAnnouncement
-                    </button>
+                    <button style={{color: getStyle("mockRoundResults")}} onClick={roundResultsToggle}>RoundResult</button>
+                    <button style={{color: getStyle("mockRolesAnnouncement")}} onClick={roleAnnouncementToggle}>roleAnnouncement</button>
+                    <button style={{color: getStyle("mockRoundAnnouncement")}} onClick={roundAnnouncementToggle}>roundAnnouncement</button>
+                    <button style={{color: getStyle("mockTurnAnnouncement")}} onClick={turnAnnouncementToggle}>turnAnnouncement</button>
+                    <button style={{color: getStyle("mockDeduplicationAnnouncement")}} onClick={deduplicationAnnouncementToggle}>deduplicationAnnouncement</button>
+                    <button style={{color: getStyle("mockGuessStartAnnouncement")}} onClick={guessStartAnnouncementToggle}>guessStartAnnouncement</button>
+                    <button style={{color: getStyle("mockGameOverAnnouncement")}} onClick={gameOverAnnouncementToggle}>gameOverAnnouncement</button>
                     <button style={{color: getStyle("mockGameStatus")}} onClick={gameStatusToggle}>gameStatus</button>
                     <button style={{color: getStyle("mockTimer")}} onClick={timerToggle}>timer</button>
                 </div>

@@ -16,11 +16,17 @@ export const initialGameState: GameState = {
     announceTurn: false,
     announceGameOver: false,
     announceDeduplication: false,
+    announceGuessStart: false,
 };
 
 export function gameStateReducer(state: GameState, action: GameStateAction): GameState {
     const {rounds} = state;
     switch (action.type) {
+        case "announceGuessStart":
+            return {
+                ...state,
+                announceGuessStart: action.payload.announceGuessStart
+            }
         case "announceDeduplication":
             return {
                 ...state,

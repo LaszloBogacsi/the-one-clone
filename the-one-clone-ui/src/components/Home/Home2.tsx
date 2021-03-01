@@ -77,7 +77,8 @@ export function Home2() {
         announceRound,
         announceTurn,
         announceGameOver,
-        announceDeduplication
+        announceDeduplication,
+        announceGuessStart
     }, dispatchGameAction] = useReducer(gameStateReducer, initialGameState)
     const [players, dispatchPlayerAction] = useReducer(playersReducer, [] as Player[])
     const [countdown, dispatchCountdownAction] = useReducer(countdownReducer, hintTimeout)
@@ -120,6 +121,7 @@ export function Home2() {
                 announceTurn: false,
                 announceGameOver: false,
                 announceDeduplication: false,
+                announceGuessStart: false,
             })
 
             dispatchGameAction({type: "setGameState", payload: toGameState(data.gameState)})
@@ -153,10 +155,9 @@ export function Home2() {
         const startTurnHandler = (data: { message: string }) => {
             dispatchGameAction({type: 'announceTurn', payload: {announceTurn: false}});
         }
-        const countdownHandler = (data: { countdown: number }) => dispatchCountdownAction({
-            type: 'updateCountdown',
-            payload: {...data}
-        });
+        const countdownHandler = (data: { countdown: number }) => {
+            dispatchCountdownAction({type: 'updateCountdown', payload: {...data}});
+        }
         const endHintHandler = (data: { message: string }) => {
             console.log(data)
         };
@@ -168,18 +169,18 @@ export function Home2() {
             dispatchGameAction({type: 'setDeduplication', payload: {...data}});
             dispatchGameAction({type: 'announceDeduplication', payload: {announceDeduplication: false}});
         }
+        const guessStartAnnounceHandler = (data: {announceGuessStart: boolean}) => {
+            dispatchGameAction({type: 'announceGuessStart', payload: {...data}});
+        }
         const turnHintsHandler = (data: { hints: Hint[], currentRound: number, currentTurn: number }) => {
             dispatchGameAction({type: 'addHints', payload: {...data}});
-            dispatchGameAction({
-                type: 'setDeduplication',
-                payload: {deduplication: false, currentRound: data.currentRound, currentTurn: data.currentTurn}
-            });
+            dispatchGameAction({type: 'setDeduplication', payload: {deduplication: false, currentRound: data.currentRound, currentTurn: data.currentTurn}});
+        }
+        const turnHintsRevealHandler = (data: { reveal: boolean, currentRound: number, currentTurn: number }) => {
+            dispatchGameAction({type: 'announceGuessStart', payload: {announceGuessStart: false}});
+            dispatchGameAction({type: 'setTurnHintsReveal', payload: {...data}});
 
         }
-        const turnHintsRevealHandler = (data: { reveal: boolean, currentRound: number, currentTurn: number }) => dispatchGameAction({
-            type: 'setTurnHintsReveal',
-            payload: {...data}
-        });
         const turnResultHandler = (data: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string }) => dispatchGameAction({
             type: 'setTurnResult',
             payload: {...data}
@@ -214,6 +215,7 @@ export function Home2() {
         socket?.on('end-hint', endHintHandler)
         socket?.on('announce-deduplication', announceDeduplicationHandler)
         socket?.on('start-deduplication', startDeduplicationHandler)
+        socket?.on('announce-guess-start', guessStartAnnounceHandler)
         socket?.on('turn-hints', turnHintsHandler)
         socket?.on('turn-hints-reveal', turnHintsRevealHandler)
         socket?.on('turn-result', turnResultHandler)
@@ -236,6 +238,7 @@ export function Home2() {
             socket?.off('end-hint', endHintHandler)
             socket?.off('announce-deduplication', announceDeduplicationHandler)
             socket?.off('start-deduplication', startDeduplicationHandler)
+            socket?.off('announce-guess-start', guessStartAnnounceHandler)
             socket?.off('turn-hints', turnHintsHandler)
             socket?.off('turn-hints-reveal', turnHintsRevealHandler)
             socket?.off('turn-result', turnResultHandler)
@@ -310,8 +313,20 @@ export function Home2() {
         socket!.emit("dedupe-submit")
     }
 
+    // TODO: todos here
     /*
-        Announce guessing
+        3 player mode: if 3 two hinters get two hints
+        implement skipping a guess
+        admin leaves -> appoint new admin, but not guesser, if 3 and admin leaves -> game over
+        guesser leaves -> turn over start, start new turn
+        admin can not be guesser
+        refactor announcements to have one boolean switch (as only one can be on at a time)
+        backend: keep track and cancel transition timeouts when game over, or turn/round over
+        backend: refactor bits to keep timeout definitions on the same level, make all timeouts configurable for given transitions.
+        create game config settings from ui and interactions: max round number, timeouts.
+        backend: refactor emithandlers, make the game flow more obvious.
+
+        last implementations: player limits (min 3 players, max 7 players)
      */
 
     return (
@@ -467,6 +482,16 @@ export function Home2() {
                                     me={me}
                                     role={players.find(p => p.isAdmin)}
                                     messageText={"removing duplicate hints"}/>
+                            }
+                        </Overlay>
+                        }
+                        {(mockSettings.mockGuessStartAnnouncement.useMock ? mockSettings.mockGuessStartAnnouncement.visible : announceGuessStart) &&
+                        <Overlay>
+                            {mockSettings.mockGuessStartAnnouncement.useMock ?
+                                <RolesAnnouncement me={mockPlayers.find(p => p.isMe)}
+                                                   role={mockPlayers.find(p => p.isGuessing)} messageText={"guessing now"}/>
+                                : <RolesAnnouncement me={me} role={players.find(p => p.isGuessing)}
+                                                     messageText={"guessing now"}/>
                             }
                         </Overlay>
                         }

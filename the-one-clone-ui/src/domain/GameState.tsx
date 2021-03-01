@@ -14,4 +14,5 @@ export interface GameState {
     announceTurn: boolean
     announceDeduplication: boolean
     announceGameOver: boolean
+    announceGuessStart: boolean
 }

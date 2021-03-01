@@ -31,7 +31,8 @@ test('can add hints to a turn in a round', () => {
         announceDeduplication: false,
         announceGameOver: false,
         announceRound: false,
-        announceTurn: false
+        announceTurn: false,
+        announceGuessStart: false
     };
     const updateAction: GameStateAction = {type: 'addHints', payload: {hints: hintsExpected, currentRound: 0, currentTurn: 0}};
     const updatedState = gameStateReducer(initialState, updateAction);
@@ -58,7 +59,8 @@ test('can add turn to a round', () => {
         announceDeduplication: false,
         announceGameOver: false,
         announceRound: false,
-        announceTurn: false
+        announceTurn: false,
+        announceGuessStart: false
     };
     const updateAction: GameStateAction = {type: 'addTurn', payload: {turn, currentRound: 0, currentTurn: 0}};
     const updatedState = gameStateReducer(initialState, updateAction);

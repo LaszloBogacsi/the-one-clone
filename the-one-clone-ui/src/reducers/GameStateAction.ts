@@ -20,3 +20,4 @@ export type GameStateAction =
     | { type: 'announceDeduplication', payload: {announceDeduplication: boolean}}
     | { type: 'setDeduplication', payload: {deduplication: boolean, currentRound: number, currentTurn: number}}
     | { type: 'resetGameState', payload: {}}
+    | { type: 'announceGuessStart', payload: {announceGuessStart: boolean}}

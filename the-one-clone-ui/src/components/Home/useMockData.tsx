@@ -18,6 +18,7 @@ const mockSettingsInitial: { [key: string]: { useMock: boolean, visible: boolean
     mockTimer: {useMock: true, visible: true},
     mockHints: {useMock: true, visible: true},
     mockDeduplicationAnnouncement: {useMock: true, visible: false},
+    mockGuessStartAnnouncement: {useMock: true, visible: false},
 }
 
 export default () => {
