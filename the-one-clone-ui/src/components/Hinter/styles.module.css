@@ -33,3 +33,9 @@
     border-radius: 8px;
 
 }
+
+.description {
+    color: #676767;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}

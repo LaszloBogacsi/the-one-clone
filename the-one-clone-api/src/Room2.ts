@@ -1,48 +1,53 @@
 import {Namespace, Socket} from "socket.io";
 
 
-interface Player {
+export interface Player {
     id: string
     playerName: string
     isReady: boolean
-    isAdmin: boolean
+    isAdmin: boolean // TODO: use Role: "ADMIN" insted
     isGuessing: boolean
 }
 
-class Turn {
-    public readonly secretWord: string
-    public hints: Hint[] = []
-    public reveal = false
-    public guess = ""
-    public result: string | undefined;
-    public deduplication = false;
+type TurnResult = 'success' | 'failure' | 'skip'
 
-    constructor(chosenWord: string) {
-        this.secretWord = chosenWord
+export class Turn {
+    public hints: Hint[];
+    public reveal: boolean;
+    public guess: string;
+    public result?: TurnResult;
+    public deduplication: boolean;
+    public skip: boolean;
+
+    constructor(public readonly secretWord: string) {
+        this.hints = [];
+        this.reveal = false;
+        this.guess = "";
+        this.deduplication = false;
+        this.skip = false;
     }
 }
 
-class Hint {
-    constructor(public readonly player: Player, public readonly hint: string, public duplicate: boolean) {
+export class Hint {
+    constructor(
+        public readonly player: Player,
+        public readonly hint: string,
+        public duplicate: boolean) {
     }
 }
 
-class Round {
+export class Round {
     public turns: Turn[] = []
     public points = 0
     public currentTurn = -1
-
-    constructor() {
-    }
 
     addTurn(turn: Turn) {
         this.turns.push(turn);
         this.currentTurn += 1;
     }
-
 }
 
-class GameConfig {
+export class GameConfig {
     constructor(
         public maxRounds: number,
         public hintTimeout: number,
@@ -71,7 +76,7 @@ class GameState {
 
 }
 
-class Room2 {
+export class Room2 {
     private io: Namespace;
     private roomId: string
     private playerName: string
@@ -149,12 +154,13 @@ class Room2 {
                 this._hintToDedupeTransition()
             }
         })
-        this.socket.on('on-player-guess-submit', (data: { guess: string }) => {
+        this.socket.on('on-player-guess-submit', (data: { guess: string, skip: boolean }) => {
             const {gameState}: { gameState: GameState } = this.store;
             const {rounds, currentRound} = gameState;
             const round: Round = rounds[currentRound]
             const turn: Turn = round.turns[round.currentTurn]
             turn.guess = data.guess;
+            turn.skip = data.skip;
             console.info(`[INFO] Submitting guess, client ${this.socket.id}`);
 
             this._clearTimeouts()
@@ -360,8 +366,6 @@ class Room2 {
             this._startDeduplication();
             this._startCountDown(this.store.gameState.gameConfig.dedupeTimeout / 1000, this._dedupeToGuessTransition.bind(this));
         }, 2000)
-
-
     }
 
     _dedupeToGuessTransition() {
@@ -396,7 +400,7 @@ class Room2 {
         const {rounds, currentRound} = gameState;
         const round: Round = rounds[currentRound]
         const turn: Turn = round.turns[round.currentTurn]
-        turn.deduplication = true;
+        turn.deduplication = true; // TODO: WHY??
         this._emitStartDeduplication(turn.deduplication, currentRound, round.currentTurn)
     }
 
@@ -404,22 +408,8 @@ class Room2 {
         this.io.to(this.roomId).emit('start-deduplication', {deduplication, currentRound, currentTurn})
     }
 
-    _revealHints() {
-        const {gameState}: { gameState: GameState } = this.store;
-        const {rounds, currentRound} = gameState;
-        const round: Round = rounds[currentRound]
-        const turn: Turn = round.turns[round.currentTurn]
-        this._emitHints(turn.hints, currentRound, round.currentTurn)
-        turn.reveal = true
-        this._emitReveal(turn.reveal, currentRound, round.currentTurn)
-    }
-
     _emitHints(hints: Hint[], currentRound: number, currentTurn: number) {
         this.io.to(this.roomId).emit('turn-hints', {hints, currentRound, currentTurn})
-    }
-
-    _emitReveal(reveal: boolean, currentRound: number, currentTurn: number) {
-        this.io.to(this.roomId).emit('turn-hints-reveal', {reveal, currentRound, currentTurn})
     }
 
     _revealHintsToHinters() {
@@ -516,7 +506,7 @@ class Room2 {
 
     _isGameOver(): boolean {
         const {currentRound, gameConfig, rounds} = this.store.gameState;
-        const round: Round = rounds[currentRound]
+        const round: Round = rounds[currentRound];
 
         return gameConfig.maxRounds <= currentRound && gameConfig.maxTurn <= round.currentTurn;
     }
@@ -524,18 +514,32 @@ class Room2 {
     _revealTurnResult() {
         const {gameState}: { gameState: GameState } = this.store;
         const {rounds, currentRound, gameConfig} = gameState;
-        const round: Round = rounds[currentRound]
-        const turn: Turn = round.turns[round.currentTurn]
+        const round: Round = rounds[currentRound];
+        const turn: Turn = round.turns[round.currentTurn];
 
-        const match = turn.guess === turn.secretWord
-        if (match) {
-            round.points += 1
-        } else {
-            gameConfig.maxTurn ? round.points = Math.max(0, round.points + 1) : gameConfig.maxTurn -= 1 // TODO: Maybe a round shoud have an effective max turn
+        turn.result = this._getTurnResult(turn);
+
+        this._calculatePoints(turn.result, round, gameConfig) // TODO: Don't mutate rounds and gameConfig, return value instead
+        this._emitTurnResults(currentRound, round.currentTurn, round.points, gameConfig.maxTurn, turn.result)
+    }
+
+    _getTurnResult(turn: Turn): TurnResult {
+        const match = turn.guess.trim().toUpperCase() === turn.secretWord.toUpperCase();
+        return turn.skip ? 'skip' : match ? 'success' : 'failure'
+    }
+
+    _calculatePoints(result: TurnResult, round: Round, gameConfig: GameConfig): void {
+        switch (result) {
+            case 'success':
+                round.points += 1
+                break;
+            case 'failure':
+                round.currentTurn === gameConfig.maxTurn ? round.points = Math.max(0, round.points - 1) : gameConfig.maxTurn -= 1 // TODO: Maybe a round shoud have an effective max turn
+                break;
+            case "skip":
+                break;
+            default: throw new Error(`Unsupported turn result: ${result}`);
         }
-        const result = match ? 'success' : 'failure'
-        turn.result = result;
-        this._emitTurnResults(currentRound, round.currentTurn, round.points, gameConfig.maxTurn, result)
     }
 
     _emitTurnResults(currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string) {
@@ -588,5 +592,6 @@ class Room2 {
     }
 }
 
-module.exports = Room2;
-
+module.exports = {
+    Room2, Turn, Round, GameConfig
+};

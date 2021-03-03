@@ -53,14 +53,13 @@ export interface ScoreDescription {
 
 export function Home2() {
     let query = useQuery();
+    const minPlayersNumber = 3;
 
     const [socket, setSocket] = useState<Socket>();
     const [roomId, setRoomId] = useState("09zzt1lym3");
     const [me, setMe] = useState<Player>();
 
     // INPUTS
-    const [hintSecond, setHintSecond] = useState<string>();
-    const [guess, setGuess] = useState<string>();
     const randomColors = useRandomColors();
     const {mockSettings, setMockSettings} = useMockData()
 
@@ -169,7 +168,7 @@ export function Home2() {
             dispatchGameAction({type: 'setDeduplication', payload: {...data}});
             dispatchGameAction({type: 'announceDeduplication', payload: {announceDeduplication: false}});
         }
-        const guessStartAnnounceHandler = (data: {announceGuessStart: boolean}) => {
+        const guessStartAnnounceHandler = (data: { announceGuessStart: boolean }) => {
             dispatchGameAction({type: 'announceGuessStart', payload: {...data}});
         }
         const turnHintsHandler = (data: { hints: Hint[], currentRound: number, currentTurn: number }) => {
@@ -269,17 +268,10 @@ export function Home2() {
     const onJoinRoom = async (playerName: string) => connectWebsocket("join", playerName)
     const onCreateRoom = async (playerName: string) => connectWebsocket("create", playerName)
     const onReady = () => socket!.emit('on-ready', {ready: !me?.isReady})
+    const onHint = (hint: string) => socket!.emit('on-player-hint-submit', {hint})
 
-    const onHint = (event: any, hint: string) => socket!.emit('on-player-hint-submit', {hint})
-    const onHintSecond = () => {
-        socket!.emit('on-player-hint-submit', {hint: hintSecond})
-        setHintSecond("")
-    }
+    const onGuess = (event: any, guess: string, skip = false) => socket!.emit('on-player-guess-submit', {guess, skip})
 
-    const onGuess = (event: any, guess: string, skip = false) => {
-        socket!.emit('on-player-guess-submit', {guess, skip})
-        setGuess("")
-    }
     const onSkip = (event: any) => onGuess(event, "", true)
 
     const scoreDescription = (score: number): ScoreDescription => {
@@ -315,8 +307,6 @@ export function Home2() {
 
     // TODO: todos here
     /*
-        3 player mode: if 3 two hinters get two hints
-        implement skipping a guess
         admin leaves -> appoint new admin, but not guesser, if 3 and admin leaves -> game over
         guesser leaves -> turn over start, start new turn
         admin can not be guesser
@@ -376,7 +366,8 @@ export function Home2() {
                                 : <Hinter
                                     secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
                                     onHint={onHint}
-                                    me={me!}/>
+                                    me={me!}
+                                    isMinPlayerMode={players.length === minPlayersNumber}/>
                             }
                         </div>
                         }

@@ -62,8 +62,9 @@ export const mockGameStatusProps = {
 
 export const mockHinterProps = {
     secretWord: "Big Secret Word",
-    onHint: (e: any, hint: string) => console.log(hint),
-    me: mockPlayers.find(p => p.isMe)!
+    onHint: (hint: string) => console.log(hint),
+    me: mockPlayers.find(p => p.isMe)!,
+    isMinPlayerMode: true
 }
 
 export const mockGuesserProps = {
