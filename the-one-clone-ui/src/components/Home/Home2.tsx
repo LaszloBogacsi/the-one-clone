@@ -307,7 +307,6 @@ export function Home2() {
 
     // TODO: todos here
     /*
-        admin leaves -> appoint new admin, but not guesser, if 3 and admin leaves -> game over
         guesser leaves -> turn over start, start new turn
         admin can not be guesser
         refactor announcements to have one boolean switch (as only one can be on at a time)

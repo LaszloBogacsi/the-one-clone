@@ -131,8 +131,12 @@ export class Room2 {
     playerJoinedLobby() {
         console.info(`[SHOWALLPLAYERS] Client ${this.socket.id} ${this.store.clients.length}`);
 
-        this.socket.emit('show-all-players', {players: this.store.clients})
+        this._emitShowAllPLayers()
         this.io.to(this.roomId).emit('player-joined-lobby', {playerJoined: this.store.clients.find((me: Player) => me.id === this.socket.id)})
+    }
+
+    _emitShowAllPLayers() {
+        this.socket.emit('show-all-players', {players: this.store.clients})
     }
 
     isReady() {
@@ -186,13 +190,28 @@ export class Room2 {
             const disconnectedPlayer: Player = this.store.clients.find((client: Player) => client.id === this.socket.id)
             this.store.clients = this.store.clients.filter((client: Player) => client.id !== this.socket.id)
             // when all players disconnected
-            if (!this.store.clients.length) {
+
+            if (this.store.clients.length < 2) {
                 this._clearTimeouts();
                 console.info(`[GAME OVER] All players disconnected from ${this.roomId}`);
                 this._gameOver()
             }
             if (disconnectedPlayer) this._emitPlayerDisconnected(disconnectedPlayer)
+            if (disconnectedPlayer.isAdmin) {
+                this._appointNewAdmin(this.store.clients)
+                this._emitShowAllPLayers()
+            }
+            if (disconnectedPlayer.isGuessing) this._appointNewGuesser()
         })
+    }
+
+    _appointNewAdmin(clients: Player[]) {
+        const newAdminIndex = (Math.abs(clients.findIndex(p => p.isGuessing) - 1)) % clients.length;
+        clients[newAdminIndex].isAdmin = true;
+    }
+
+    _appointNewGuesser() {
+
     }
 
     showGameState() {
