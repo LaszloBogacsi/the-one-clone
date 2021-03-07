@@ -71,7 +71,7 @@ export class HintToDedupe implements GameEvent {
         const {gameState: {currentRound, rounds}}: { gameState: GameState } = store;
         const {currentTurn, turns}: Round = rounds[currentRound]
         const turn: Turn = turns[currentTurn]
-        turn.deduplication = true; // TODO: WHY??
+        turn.deduplication = true;
         this._emitStartDeduplication(turn.deduplication, currentRound, currentTurn)
     }
 

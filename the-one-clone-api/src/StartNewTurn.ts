@@ -2,7 +2,6 @@ import {GameEvent} from "./GameEvent";
 import {GameState, Player, Round, Turn} from "./Room2";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
-import Timeout = NodeJS.Timeout;
 
 export class StartNewTurn implements GameEvent {
 
