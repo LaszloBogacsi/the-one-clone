@@ -79,10 +79,11 @@ export class StartNewTurn implements GameEvent {
         this._emitRoundEnd(currentRound)
     }
 
-    _startNewRound({gameState: {addRound, currentRound}}: GameStore) {
+    _startNewRound(store: GameStore) {
         const round = new Round();
-        addRound(round)
-        this._emitRound(round, currentRound)
+        const {addRound} = store.gameState;
+        addRound.call(store.gameState, round)
+        this._emitRound(round, store.gameState.currentRound)
         console.info(`[NEWROUND] New Round starting, in ${this.roomId} room`);
     }
 

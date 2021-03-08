@@ -5,10 +5,11 @@
  */
 import {app} from './app'
 import {Socket} from "socket.io";
+
 var debug = require('debug')('the-one-clone-api:server');
 var http = require('http');
 var socketIO = require('socket.io')
-const Room2 = require("./Room2");
+const {Room2} = require("./Room2");
 
 /**
  * Get port from environment and store in Express.
@@ -29,25 +30,29 @@ const io = socketIO(server, {
 });
 
 /*
+    TODO
     refactor to reducer pattern
-    add more events for game play (turn-start, hint-start, hint-end, guess-end, result-start, result-end, game-over-start, game-over-end)
-
 */
 
 const sockio = io.of("/")
 sockio.on('connection', async (socket: Socket) => {
         console.log("connected...")
-    // @ts-ignore
-    const {roomId, playerName, action} = socket.handshake.query
-    console.log(`${roomId}, ${playerName}, ${action}`)
-    const room = new Room2({io: sockio, roomId, playerName, action, socket})
-    await room.initialize()
-    // room.showPlayers()
-    room.playerJoinedLobby()
-    room.isReady() // this just register a handler
-    room.showGameState()
-    // room.registerGameHandlers()
-    room.onDisconnect()
+        // @ts-ignore
+        const {roomId, playerName, action} = socket.handshake.query
+        console.log(`${roomId}, ${playerName}, ${action}`)
+        const room = new Room2({io: sockio, roomId, playerName, action, socket})
+        const hasJoined = await room.initialize()
+        if (hasJoined) {
+            room.playerJoinedLobby()
+            room.isReady()
+            room.showGameState()
+        } else {
+            console.log("join failed, disconnecting socket")
+            socket.emit("end-game", {inLobby: true})
+
+            socket.disconnect(true);
+        }
+        room.onDisconnect()
     }
 );
 

@@ -10,17 +10,17 @@ export class Countdown implements GameEvent {
     handle(store: GameStore): Promise<void> {
         return new Promise(resolve => {
             this.onResolve = resolve;
-            this.startCountDown(store.countDownInterval, store.countDownTimeout, resolve)
+            this.startCountDown(store, resolve)
         });
     }
 
-    private startCountDown(countDownInterval: Timeout, countDownTimeout: Timeout, transition: (value?: void) => void) {
-        countDownTimeout = setTimeout(() => {
+    private startCountDown(store: GameStore, transition: (value?: void) => void) {
+        store.countDownTimeout = setTimeout(() => {
             transition()
         }, this.delay * 1000)
         let countdown = this.delay;
         this._emitCountdown(countdown)
-        countDownInterval = setInterval(() => {
+        store.countDownInterval = setInterval(() => {
             countdown -= 1
             this._emitCountdown(countdown)
         }, 1000)

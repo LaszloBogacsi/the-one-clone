@@ -199,6 +199,14 @@ export function Home2() {
 
         socket?.on('connect', () => {
         })
+        socket?.on('disconnect', (reason: string) => {
+            if (reason === "io server disconnect") {
+                dispatchGameAction({type: 'resetGameState', payload: {}});
+                dispatchGameAction({type: 'setInLobby', payload: false});
+                setSocket(undefined);
+                // socket.connect();
+            }
+        })
         socket?.on('disconnected', (data: { disconnectedPlayer: any }) => {
             dispatchPlayerAction({type: 'removePlayer', payload: toPlayer(data.disconnectedPlayer)})
         })

@@ -104,18 +104,10 @@ export class Room2 {
         this.socket = param.socket;
         this.store = param.io.adapter;
         this.emitter = new Emitter(this.io, this.roomId);
-
-        this.gameLoopEvents = new Map<GameEventType, GameEvent>([
-            ['startNewTurn', new StartNewTurn(this.roomId, this.emitter)],
-            ['hintCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.hintTimeout / 1000, this.transition)],
-            ['hintToDedupe', new HintToDedupe(this.emitter)],
-            ['dedupeCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.dedupeTimeout / 1000, this.transition)],
-            ['dedupeToGuess', new DedupeToGuess(this.emitter)],
-            ['guessCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.guessTimeout / 1000, this.transition)],
-            ['guessToNewTurn', new GuessToNewTurn(this.emitter)]])
+        this.gameLoopEvents = new Map();
     }
 
-    async initialize() {
+    async initialize(): Promise<boolean> {
 
         if (this.action === 'join') {
             await this.socket.join(this.roomId)
@@ -130,8 +122,10 @@ export class Room2 {
                     isGuessing: false
                 } as Player)
                 console.info(`[JOINED] Client ${this.socket.id} joined room ${this.roomId}`);
+                return true;
             } else {
                 console.info(`[ERROR] Room ${this.roomId} does not exists, please create the room first`);
+                return false;
             }
         }
 
@@ -147,7 +141,11 @@ export class Room2 {
             } as Player]
             console.info(`[CREATE] Client ${this.socket.id} created and joined room ${this.roomId}`);
             this.resetGameState()
+            this.initLoopEvents()
+            return true;
         }
+
+        return false;
     }
 
     playerJoinedLobby() {
@@ -213,6 +211,8 @@ export class Room2 {
                 this._clearTimeouts();
                 console.info(`[GAME OVER] All players disconnected from ${this.roomId}`);
                 this.gameOver()
+                // TODO: at 2 players, one disconnects, then it still starts a newTurn
+                return;
             }
             if (disconnectedPlayer) this._emitPlayerDisconnected(disconnectedPlayer)
             if (disconnectedPlayer.isAdmin) {
@@ -318,6 +318,17 @@ export class Room2 {
 
     emitAllPlayers(clients: Player[]) {
         this.emitter.emit('show-all-players', {players: clients})
+    }
+
+    private initLoopEvents() {
+        this.gameLoopEvents = new Map<GameEventType, GameEvent>([
+            ['startNewTurn', new StartNewTurn(this.roomId, this.emitter)],
+            ['hintCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.hintTimeout / 1000, this.transition)],
+            ['hintToDedupe', new HintToDedupe(this.emitter)],
+            ['dedupeCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.dedupeTimeout / 1000, this.transition)],
+            ['dedupeToGuess', new DedupeToGuess(this.emitter)],
+            ['guessCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.guessTimeout / 1000, this.transition)],
+            ['guessToNewTurn', new GuessToNewTurn(this.emitter)]])
     }
 }
 
