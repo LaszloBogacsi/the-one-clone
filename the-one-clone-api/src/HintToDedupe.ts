@@ -4,13 +4,19 @@ import {Emitter} from "./Emitter";
 import {GameState, Hint, Player, Round, Turn} from "./Room2";
 
 export class HintToDedupe implements GameEvent {
+    private readonly timeouts: number[] = []
+
     constructor(private readonly emitter: Emitter) {
     }
 
+    public cancel(): void {
+        this.timeouts.forEach(clearTimeout);
+    };
+
     handle(store: GameStore): Promise<void> {
-        this._emitHintEnd();
+        this.emitHintEnd();
         this._markDuplicatesForCurrentTurn(store);
-        return new Promise(resolve => this._deduplicate(store, resolve));
+        return new Promise(resolve => this.deduplicate(store, resolve));
     }
 
     _markDuplicatesForCurrentTurn(store: GameStore) {
@@ -30,59 +36,65 @@ export class HintToDedupe implements GameEvent {
         })
     }
 
-    _deduplicate(store: GameStore, resolve: (value?: void) => void) {
-        setTimeout(() => {
-            this._revealHintsToHinters(store);
-            this._announceDeduplication();
-        })
-        setTimeout(() => {
-            this._startDeduplication(store);
-            resolve();
-        }, 2000)
+    private getEventTiming(event: string): number | undefined {
+        const interval = 2000;
+        const timings: Map<string, number> = new Map([
+            ["revealHints", 0],
+            ["startDeduplication", interval],
+        ])
+        return timings.get(event)
     }
 
-    _revealHintsToHinters(store: GameStore) {
+    private deduplicate(store: GameStore, resolve: (value?: void) => void): void {
+
+        this.timeouts.push(setTimeout(() => {
+            this.revealHintsToHinters(store);
+            this.emitAnnounceDeduplication()
+        }, this.getEventTiming("revealHints")));
+        this.timeouts.push(setTimeout(() => {
+            this.startDeduplication(store);
+            resolve();
+        }, this.getEventTiming("startDeduplication")))
+    }
+
+    private revealHintsToHinters(store: GameStore): void {
         const {gameState, clients}: { gameState: GameState, clients: Player[] } = store;
         const {rounds, currentRound} = gameState;
         const round: Round = rounds[currentRound]
         const turn: Turn = round.turns[round.currentTurn]
         const hinters = clients.filter((client: Player) => !client.isGuessing);
-        this._emitHintsToHinters(hinters, turn.hints, currentRound, round.currentTurn)
+        this.emitHintsToHinters(hinters, turn.hints, currentRound, round.currentTurn)
         turn.reveal = true
-        this._emitRevealToHinters(hinters, turn.reveal, currentRound, round.currentTurn)
+        this.emitRevealToHinters(hinters, turn.reveal, currentRound, round.currentTurn)
     }
 
-    _emitHintsToHinters(hinters: Player[], hints: Hint[], currentRound: number, currentTurn: number) {
+    private emitHintsToHinters(hinters: Player[], hints: Hint[], currentRound: number, currentTurn: number): void {
         hinters.forEach((client: Player) =>
             this.emitter.hasClient(client.id) && this.emitter.emitToClient(client.id, "turn-hints", {hints, currentRound, currentTurn}))
     }
 
-    _emitRevealToHinters(hinters: Player[], reveal: boolean, currentRound: number, currentTurn: number) {
+    private emitRevealToHinters(hinters: Player[], reveal: boolean, currentRound: number, currentTurn: number): void {
         hinters.forEach((client: Player) =>
             this.emitter.hasClient(client.id) && this.emitter.emitToClient(client.id, 'turn-hints-reveal', {reveal, currentRound, currentTurn}))
     }
 
-    _startDeduplication(store: GameStore) {
+    private startDeduplication(store: GameStore): void {
         const {gameState: {currentRound, rounds}}: { gameState: GameState } = store;
         const {currentTurn, turns}: Round = rounds[currentRound]
         const turn: Turn = turns[currentTurn]
         turn.deduplication = true;
-        this._emitStartDeduplication(turn.deduplication, currentRound, currentTurn)
+        this.emitStartDeduplication(turn.deduplication, currentRound, currentTurn)
     }
 
-    _announceDeduplication() {
-        this._emitAnnounceDeduplication()
-    }
-
-    _emitAnnounceDeduplication() {
+    private emitAnnounceDeduplication(): void {
         this.emitter.emit('announce-deduplication', {message: "deduplication start"})
     }
 
-    _emitStartDeduplication(deduplication: boolean, currentRound: number, currentTurn: number) {
+    private emitStartDeduplication(deduplication: boolean, currentRound: number, currentTurn: number): void {
         this.emitter.emit('start-deduplication', {deduplication, currentRound, currentTurn})
     }
 
-    _emitHintEnd() {
+    private emitHintEnd(): void {
         this.emitter.emit('end-hint', {message: "hint end"});
     }
 }

@@ -4,6 +4,8 @@ import {GameStore} from "./GameStore";
 import {GameState, Player} from "./Room2";
 
 export class GameOver implements GameEvent {
+    private readonly timeouts: number[] = []
+
     constructor(private readonly emitter: Emitter) {
     }
 
@@ -12,11 +14,15 @@ export class GameOver implements GameEvent {
         return Promise.resolve(undefined);
     }
 
+    cancel(): void {
+        this.timeouts.forEach(clearTimeout);
+    }
+
     private gameOver(store: GameStore) {
         const intervalMs = 2000;
-        const timingFor = (event: string) => new Map([["announce", intervalMs], ["transition", intervalMs * 2]]).get(event)
-        setTimeout(this.announceGameOver.bind(this), timingFor("announce"))
-        setTimeout(this.doGameOver.bind(this, store), timingFor("transition"));
+        const timingFor = (event: string) => new Map([["announce", intervalMs], ["transition", intervalMs * 2]]).get(event);
+        this.timeouts.push(setTimeout(this.announceGameOver.bind(this), timingFor("announce")));
+        this.timeouts.push(setTimeout(this.doGameOver.bind(this, store), timingFor("transition")));
     }
 
     private doGameOver(store: GameStore) {

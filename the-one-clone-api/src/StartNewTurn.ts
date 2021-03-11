@@ -4,15 +4,20 @@ import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
 
 export class StartNewTurn implements GameEvent {
+    private readonly timeouts: number[] = []
 
     constructor(private readonly roomId: string, private readonly emitter: Emitter) {
     }
 
+    public cancel(): void {
+        this.timeouts.forEach(clearTimeout);
+    };
+
     async handle(store: GameStore): Promise<void> {
-        return new Promise(resolve => this._prepAndStartNewTurn(store, resolve));
+        return new Promise(resolve => this.prepAndStartNewTurn(store, resolve));
     }
 
-    _getEventTiming(currentRound: number) {
+    private getEventTiming(currentRound: number): (event: string) => number | undefined {
         return function (event: string) {
             const interval = 3000;
             const timings: Map<string, number> = new Map([
@@ -32,78 +37,78 @@ export class StartNewTurn implements GameEvent {
         }
     }
 
-    _prepAndStartNewTurn(store: GameStore, resolve: (value?: void) => void) {
+    private prepAndStartNewTurn(store: GameStore, resolve: (value?: void) => void): void {
         const {clients, gameState} = store;
         const {rounds, currentRound, gameConfig} = gameState;
         const round: Round = rounds[currentRound];
-        const timingFor = this._getEventTiming(currentRound);
+        const timingFor = this.getEventTiming(currentRound);
         if (currentRound === -1 || gameConfig.maxTurn <= round.currentTurn) {
             if (currentRound > -1) {
-                setTimeout(this._roundEnd.bind(this, store), timingFor("roundEnd"))
+                this.timeouts.push(setTimeout(this.roundEnd.bind(this, store), timingFor("roundEnd")));
             }
-            setTimeout(this._startNewRound.bind(this, store), timingFor("newRound"))
+            this.timeouts.push(setTimeout(this.startNewRound.bind(this, store), timingFor("newRound")));
         }
 
-        const announceRoles = () => {
+        const announceRoles = (): void => {
             const {rounds, currentRound} = gameState;
             const round: Round = rounds[currentRound];
-            clients.forEach((client: Player) => client.isGuessing = false)
+            clients.forEach((client: Player) => client.isGuessing = false);
             const guesserId = (round.currentTurn + 1) % clients.length;
-            clients[guesserId].isGuessing = true
+            clients[guesserId].isGuessing = true;
             const guesser: Player = clients[guesserId];
-            this._emitRoleGeneral(guesser)
+            this.emitRoleGeneral(guesser);
             console.info(`[Roles] announcing guesser is ${guesser.playerName}, in ${this.roomId} room`);
         }
 
-        setTimeout(announceRoles, timingFor("announceRoles"))
-        setTimeout(this._announceNewTurn.bind(this, store), timingFor("announceNewTurn"))
-        setTimeout(this._startNewTurn.bind(this, store, resolve), timingFor("startNewTurn"))
+        this.timeouts.push(setTimeout(announceRoles, timingFor("announceRoles")));
+        this.timeouts.push(setTimeout(this.announceNewTurn.bind(this, store), timingFor("announceNewTurn")));
+        this.timeouts.push(setTimeout(this.startNewTurn.bind(this, store, resolve), timingFor("startNewTurn")));
     }
 
-    _announceNewTurn(store: GameStore) {
+    private announceNewTurn(store: GameStore): void {
         const {gameState}: { gameState: GameState } = store;
         const {rounds, currentRound} = gameState;
         const turn = new Turn(this._getSecretWord());
         const round = rounds[currentRound];
         round.addTurn(turn)
-        this._emitNewTurn(turn, currentRound, round.currentTurn)
+        this.emitNewTurn(turn, currentRound, round.currentTurn)
     }
 
-    _startNewTurn(store: GameStore, resolve: (value?: void) => void) {
+    private startNewTurn(store: GameStore, resolve: (value?: void) => void) {
         console.info(`[NEWTURN] New Turn starting, in ${this.roomId} room`);
-        this._emitStartNewTurn()
+        this.emitStartNewTurn();
         resolve();
     }
 
-    _roundEnd({gameState: {currentRound}}: GameStore) {
-        this._emitRoundEnd(currentRound)
+    private roundEnd({gameState: {currentRound}}: GameStore): void {
+        this.emitRoundEnd(currentRound);
     }
 
-    _startNewRound(store: GameStore) {
+    private startNewRound(store: GameStore): void {
         const round = new Round();
         const {addRound} = store.gameState;
         addRound.call(store.gameState, round)
-        this._emitRound(round, store.gameState.currentRound)
+        this.emitRound(round, store.gameState.currentRound)
         console.info(`[NEWROUND] New Round starting, in ${this.roomId} room`);
     }
 
-    _emitRoleGeneral(guesser: Player) {
+    private emitRoleGeneral(guesser: Player): void {
         this.emitter.emit('player-roles', {guesser: {id: guesser.id, name: guesser.playerName}})
     }
 
-    _emitRoundEnd(currentRound: number) {
+    private emitRoundEnd(currentRound: number): void {
         this.emitter.emit('end-round', {currentRound})
     }
 
-    _emitRound(round: Round, currentRound: number) {
+    private emitRound(round: Round, currentRound: number): void {
         this.emitter.emit('start-round', {round, currentRound})
     }
 
-    _emitNewTurn(turn: Turn, currentRound: any, currentTurn: number) {
+    private emitNewTurn(turn: Turn, currentRound: any, currentTurn: number): void {
         this.emitter.emit('new-turn', {turn, currentRound, currentTurn})
     }
 
-    _emitStartNewTurn() {
+    private emitStartNewTurn(): void {
         this.emitter.emit('start-turn', {message: "start turn"})
     }
 

@@ -170,7 +170,7 @@ export class Room2 {
             const allHintersHinted = this.store.clients.length === 3 ? hintersSoFar.length === 4 : this.store.clients.filter((client: Player) => !client.isGuessing).every((client: Player) => hintersSoFar.includes(client.id))
             console.info(`[INFO] Submitting hint of client ${this.socket.id}`);
             if (allHintersHinted) {
-                this._clearTimeouts()
+                this._clearAllTimeouts()
                 this.transition();
             }
         })
@@ -183,7 +183,7 @@ export class Room2 {
             turn.skip = data.skip;
             console.info(`[INFO] Submitting guess, client ${this.socket.id}`);
 
-            this._clearTimeouts()
+            this._clearAllTimeouts()
             this.transition()
         })
 
@@ -208,10 +208,9 @@ export class Room2 {
             // when all players disconnected
 
             if (this.store.clients.length < 2) {
-                this._clearTimeouts();
+                this._clearAllTimeouts();
                 console.info(`[GAME OVER] All players disconnected from ${this.roomId}`);
-                this.gameOver()
-                // TODO: at 2 players, one disconnects, then it still starts a newTurn
+                this.gameOver();
                 return;
             }
             if (disconnectedPlayer) this._emitPlayerDisconnected(disconnectedPlayer)
@@ -236,9 +235,14 @@ export class Room2 {
         this.emitter.emit('show-game-state', {gameState: this.store.gameState})
     }
 
-    _clearTimeouts() {
-        clearTimeout(this.store.countDownTimeout)
-        clearInterval(this.store.countDownInterval)
+    _clearAllTimeouts() {
+        for (const event of this.gameLoopEvents.values()) {
+            this._clearEventTimeouts(event);
+        }
+    }
+
+    _clearEventTimeouts(event: GameEvent): void {
+        event.cancel();
     }
 
     _onReadyHandler(data: { ready: boolean }) {
@@ -290,8 +294,9 @@ export class Room2 {
 
     private async gameOver() {
         const gameOver = new GameOver(this.emitter);
-        this._clearTimeouts();
+        this._clearAllTimeouts();
         await gameOver.handle(this.store);
+        gameOver.cancel();
     }
 
     private transition() {
@@ -300,7 +305,7 @@ export class Room2 {
 
     private async playNewTurn() {
         for (const event of this.gameLoopEvents.values()) {
-            this._clearTimeouts();
+            this._clearAllTimeouts();
             await event.handle(this.store);
         }
     }
