@@ -8,14 +8,9 @@ export class HintToDedupe implements GameEvent {
     }
 
     handle(store: GameStore): Promise<void> {
-        this._hintEnd(store);
+        this._emitHintEnd();
         this._markDuplicatesForCurrentTurn(store);
         return new Promise(resolve => this._deduplicate(store, resolve));
-    }
-
-    _hintEnd(store: GameStore) {
-        clearInterval(store.countDownInterval);  //TODO: is this necessary?
-        this._emitHintEnd();
     }
 
     _markDuplicatesForCurrentTurn(store: GameStore) {
