@@ -5,6 +5,7 @@
  */
 import {app} from './app'
 import {Socket} from "socket.io";
+import {WordRepository} from "./Room2";
 
 var debug = require('debug')('the-one-clone-api:server');
 var http = require('http');
@@ -40,7 +41,13 @@ sockio.on('connection', async (socket: Socket) => {
         // @ts-ignore
         const {roomId, playerName, action} = socket.handshake.query
         console.log(`${roomId}, ${playerName}, ${action}`)
-        const room = new Room2({io: sockio, roomId, playerName, action, socket})
+        const wordRepository: WordRepository = {
+            getRandomWord: (): string =>  {
+                const secretWords = ["secret", "words", "guessing"];
+                return secretWords[Math.floor(Math.random() * secretWords.length)]
+            }
+        }
+        const room = new Room2({io: sockio, roomId, playerName, action, socket, wordRepository})
         const hasJoined = await room.initialize()
         if (hasJoined) {
             room.playerJoinedLobby()

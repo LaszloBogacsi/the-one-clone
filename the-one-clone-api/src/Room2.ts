@@ -85,7 +85,9 @@ export class GameState {
 }
 
 type GameEventType = 'startNewTurn' | 'hintToDedupe' | 'dedupeToGuess' | 'guessToNewTurn' | 'hintCountDown' | 'dedupeCountDown' | 'guessCountDown'
-
+export interface WordRepository {
+    getRandomWord: () => string
+}
 export class Room2 {
     private io: Namespace;
     private roomId: string
@@ -95,8 +97,9 @@ export class Room2 {
     private store: any
     private gameLoopEvents: Map<GameEventType, GameEvent>;
     private readonly emitter: Emitter;
+    private wordRepository: WordRepository;
 
-    constructor(param: { io: Namespace, roomId: string, playerName: string, action: string, socket: Socket }) {
+    constructor(param: { io: Namespace, roomId: string, playerName: string, action: string, socket: Socket, wordRepository: WordRepository }) {
         this.io = param.io;
         this.roomId = param.roomId;
         this.playerName = param.playerName;
@@ -105,6 +108,7 @@ export class Room2 {
         this.store = param.io.adapter;
         this.emitter = new Emitter(this.io, this.roomId);
         this.gameLoopEvents = new Map();
+        this.wordRepository = param.wordRepository
     }
 
     async initialize(): Promise<boolean> {
@@ -327,7 +331,7 @@ export class Room2 {
 
     private initLoopEvents() {
         this.gameLoopEvents = new Map<GameEventType, GameEvent>([
-            ['startNewTurn', new StartNewTurn(this.roomId, this.emitter)],
+            ['startNewTurn', new StartNewTurn(this.roomId, this.emitter, this.wordRepository)],
             ['hintCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.hintTimeout / 1000, this.transition)],
             ['hintToDedupe', new HintToDedupe(this.emitter)],
             ['dedupeCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.dedupeTimeout / 1000, this.transition)],

@@ -1,12 +1,14 @@
 import {GameEvent} from "./GameEvent";
-import {GameState, Player, Round, Turn} from "./Room2";
+import {GameState, Player, Round, Turn, WordRepository} from "./Room2";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
 
 export class StartNewTurn implements GameEvent {
     private readonly timeouts: number[] = []
 
-    constructor(private readonly roomId: string, private readonly emitter: Emitter) {
+    constructor(private readonly roomId: string,
+                private readonly emitter: Emitter,
+                private readonly wordRepository: WordRepository) {
     }
 
     public cancel(): void {
@@ -68,7 +70,7 @@ export class StartNewTurn implements GameEvent {
     private announceNewTurn(store: GameStore): void {
         const {gameState}: { gameState: GameState } = store;
         const {rounds, currentRound} = gameState;
-        const turn = new Turn(this._getSecretWord());
+        const turn = new Turn(this.wordRepository.getRandomWord());
         const round = rounds[currentRound];
         round.addTurn(turn)
         this.emitNewTurn(turn, currentRound, round.currentTurn)
@@ -112,9 +114,4 @@ export class StartNewTurn implements GameEvent {
         this.emitter.emit('start-turn', {message: "start turn"})
     }
 
-    // TODO: to repository
-    _getSecretWord() {
-        const secretWords = ["secret", "words", "guessing"];
-        return secretWords[Math.floor(Math.random() * secretWords.length)]
-    }
 }
