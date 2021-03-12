@@ -2,6 +2,7 @@ import {GameEvent} from "./GameEvent";
 import {GameState, Player, Round, Turn, WordRepository} from "./Room2";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
+import Timeout = NodeJS.Timeout;
 
 export class StartNewTurn implements GameEvent {
     private readonly timeouts: number[] = []
@@ -19,7 +20,7 @@ export class StartNewTurn implements GameEvent {
         return new Promise(resolve => this.prepAndStartNewTurn(store, resolve));
     }
 
-    private getEventTiming(currentRound: number): (event: string) => number | undefined {
+    private getEventTiming(currentRound: number): (event: string) => number {
         return function (event: string) {
             const interval = 3000;
             const timings: Map<string, number> = new Map([
@@ -35,7 +36,7 @@ export class StartNewTurn implements GameEvent {
                 ["announceNewTurn", interval * 4],
                 ["startNewTurn", interval * 5]
             ])
-            return currentRound > -1 ? timings.get(event) : timings2.get(event);
+            return currentRound > -1 ? timings.get(event) || interval : timings2.get(event) || interval;
         }
     }
 
@@ -45,10 +46,14 @@ export class StartNewTurn implements GameEvent {
         const round: Round = rounds[currentRound];
         const timingFor = this.getEventTiming(currentRound);
         if (currentRound === -1 || gameConfig.maxTurn <= round.currentTurn) {
+            const timedActions: { callable: CallableFunction, delayMs: number }[] = [
+                {callable: this.roundEnd.bind(this, store), delayMs: timingFor("roundEnd")},
+                {callable: this.startNewRound.bind(this, store), delayMs: timingFor("newRound")}
+            ]
             if (currentRound > -1) {
-                this.timeouts.push(setTimeout(this.roundEnd.bind(this, store), timingFor("roundEnd")));
+                this.startTimedAction(timedActions[0])
             }
-            this.timeouts.push(setTimeout(this.startNewRound.bind(this, store), timingFor("newRound")));
+            this.startTimedAction(timedActions[1])
         }
 
         const announceRoles = (): void => {
@@ -62,9 +67,18 @@ export class StartNewTurn implements GameEvent {
             console.info(`[Roles] announcing guesser is ${guesser.playerName}, in ${this.roomId} room`);
         }
 
-        this.timeouts.push(setTimeout(announceRoles, timingFor("announceRoles")));
-        this.timeouts.push(setTimeout(this.announceNewTurn.bind(this, store), timingFor("announceNewTurn")));
-        this.timeouts.push(setTimeout(this.startNewTurn.bind(this, store, resolve), timingFor("startNewTurn")));
+        const timedActions: { callable: CallableFunction, delayMs: number }[] = [
+            {callable: announceRoles, delayMs: timingFor("announceRoles")},
+            {callable: this.announceNewTurn.bind(this, store), delayMs: timingFor("announceNewTurn")},
+            {callable: this.startNewTurn.bind(this, store, resolve), delayMs: timingFor("startNewTurn")},
+
+        ]
+        timedActions.forEach(this.startTimedAction)
+    }
+
+    private startTimedAction(timedAction: { callable: CallableFunction, delayMs: number }) {
+        const timeout = setTimeout(timedAction.callable, timedAction.delayMs);
+        this.timeouts.push(timeout);
     }
 
     private announceNewTurn(store: GameStore): void {
