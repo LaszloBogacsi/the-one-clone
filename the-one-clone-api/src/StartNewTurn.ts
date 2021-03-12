@@ -70,7 +70,7 @@ export class StartNewTurn implements GameEvent {
         const timedActions: { callable: CallableFunction, delayMs: number }[] = [
             {callable: announceRoles, delayMs: timingFor("announceRoles")},
             {callable: this.announceNewTurn.bind(this, store), delayMs: timingFor("announceNewTurn")},
-            {callable: this.startNewTurn.bind(this, store, resolve), delayMs: timingFor("startNewTurn")},
+            {callable: this.startNewTurn.bind(this, resolve), delayMs: timingFor("startNewTurn")},
 
         ]
         timedActions.forEach(this.startTimedAction)
@@ -90,7 +90,7 @@ export class StartNewTurn implements GameEvent {
         this.emitNewTurn(turn, currentRound, round.currentTurn)
     }
 
-    private startNewTurn(store: GameStore, resolve: (value?: void) => void) {
+    private startNewTurn(resolve: (value?: void) => void) {
         console.info(`[NEWTURN] New Turn starting, in ${this.roomId} room`);
         this.emitStartNewTurn();
         resolve();
