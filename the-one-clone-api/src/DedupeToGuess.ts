@@ -17,7 +17,7 @@ export class DedupeToGuess implements GameEvent {
                 this.emitAnnounceGuessStart(false)
                 this.revealHintsToGuesser(store);
                 resolve();
-            }, this.getEventTiming("revealHintsToGuesser")));
+            }, DedupeToGuess.getEventTiming("revealHintsToGuesser")));
         });
     }
 
@@ -25,7 +25,7 @@ export class DedupeToGuess implements GameEvent {
         this.timeouts.forEach(clearTimeout);
     };
 
-    private getEventTiming(event: string): number | undefined {
+    private static getEventTiming(event: string): number | undefined {
         const interval = 2000;
         const timings: Map<string, number> = new Map([
             ["revealHintsToGuesser", interval],

@@ -36,7 +36,7 @@ export class HintToDedupe implements GameEvent {
         })
     }
 
-    private getEventTiming(event: string): number | undefined {
+    private static getEventTiming(event: string): number | undefined {
         const interval = 2000;
         const timings: Map<string, number> = new Map([
             ["revealHints", 0],
@@ -50,11 +50,11 @@ export class HintToDedupe implements GameEvent {
         this.timeouts.push(setTimeout(() => {
             this.revealHintsToHinters(store);
             this.emitAnnounceDeduplication()
-        }, this.getEventTiming("revealHints")));
+        }, HintToDedupe.getEventTiming("revealHints")));
         this.timeouts.push(setTimeout(() => {
             this.startDeduplication(store);
             resolve();
-        }, this.getEventTiming("startDeduplication")))
+        }, HintToDedupe.getEventTiming("startDeduplication")))
     }
 
     private revealHintsToHinters(store: GameStore): void {

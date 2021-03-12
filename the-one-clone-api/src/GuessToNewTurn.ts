@@ -25,18 +25,18 @@ export class GuessToNewTurn implements GameEvent {
         const round: Round = rounds[currentRound];
         const turn: Turn = round.turns[round.currentTurn];
 
-        turn.result = this.getTurnResult(turn);
+        turn.result = GuessToNewTurn.getTurnResult(turn);
 
-        this.calculatePoints(turn.result, round, gameConfig) // TODO: Don't mutate rounds and gameConfig, return value instead
+        GuessToNewTurn.calculatePoints(turn.result, round, gameConfig) // TODO: Don't mutate rounds and gameConfig, return value instead
         this.emitTurnResults(currentRound, round.currentTurn, round.points, gameConfig.maxTurn, turn.result)
     }
 
-    private getTurnResult(turn: Turn): TurnResult {
+    private static getTurnResult(turn: Turn): TurnResult {
         const match = turn.guess.trim().toUpperCase() === turn.secretWord.toUpperCase();
         return turn.skip ? 'skip' : match ? 'success' : 'failure'
     }
 
-    private calculatePoints(result: TurnResult, round: Round, gameConfig: GameConfig): void {
+    private static calculatePoints(result: TurnResult, round: Round, gameConfig: GameConfig): void {
         switch (result) {
             case 'success':
                 round.points += 1
