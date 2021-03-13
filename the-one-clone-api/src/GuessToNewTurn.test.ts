@@ -39,8 +39,6 @@ describe('GuessToNewTurn', function () {
                 }
             },
             clients: [],
-            countDownTimeout: {} as any as Timeout,
-            countDownInterval: {} as any as Timeout
         })
     }
 
@@ -57,8 +55,6 @@ describe('GuessToNewTurn', function () {
                 }
             },
             clients: [],
-            countDownTimeout: {} as any as Timeout,
-            countDownInterval: {} as any as Timeout
         })
     }
 

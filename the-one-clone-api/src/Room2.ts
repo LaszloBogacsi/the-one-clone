@@ -7,7 +7,7 @@ import {GuessToNewTurn} from "./GuessToNewTurn";
 import {GameOver} from "./GameOver";
 import {GameEvent} from "./GameEvent";
 import {Countdown} from "./Countdown";
-import {Player} from "./Player";
+import {Player, PlayerRole} from "./Player";
 import {Turn} from "./Turn";
 import {Hint} from "./Hint";
 import {Round} from "./Round";
@@ -32,6 +32,7 @@ export class Room2 {
     private gameLoopEvents: Map<GameEventType, GameEvent>;
     private readonly emitter: Emitter;
     private wordRepository: WordRepository;
+    private readonly gameConfig: GameConfig;
 
     constructor(param: { io: Namespace, roomId: string, playerName: string, action: RoomAction, socket: Socket, wordRepository: WordRepository }) {
         this.io = param.io;
@@ -39,10 +40,18 @@ export class Room2 {
         this.playerName = param.playerName;
         this.action = param.action;
         this.socket = param.socket;
+        this.gameConfig = new GameConfig(
+            2,
+            6_000,
+            6_000,
+            10_000,
+            2
+        )
         this.store = param.io.adapter;
         this.emitter = new Emitter(this.io, this.roomId);
         this.gameLoopEvents = new Map();
-        this.wordRepository = param.wordRepository
+        this.wordRepository = param.wordRepository;
+
     }
 
     async initialize(): Promise<boolean> {
@@ -56,9 +65,9 @@ export class Room2 {
                     id: this.socket.id,
                     playerName: this.playerName,
                     isReady: !gameState.inLobby,
-                    isAdmin: false,
-                    isGuessing: false
-                } as Player)
+                    isGuessing: false,
+                    role: PlayerRole.HINTER
+                })
                 console.info(`[JOINED] Client ${this.socket.id} joined room ${this.roomId}`);
                 return true;
             } else {
@@ -74,9 +83,9 @@ export class Room2 {
                 id: this.socket.id,
                 playerName: this.playerName,
                 isReady: false,
-                isAdmin: true,
-                isGuessing: false
-            } as Player]
+                isGuessing: false,
+                role: PlayerRole.ADMIN_HINTER
+            }]
             console.info(`[CREATE] Client ${this.socket.id} created and joined room ${this.roomId}`);
             this.resetGameState()
             this.initLoopEvents()
@@ -101,11 +110,11 @@ export class Room2 {
             const {hints} = turns[currentTurn];
             hints.push({
                 hint: data.hint,
-                player: this.store.clients.find((c: Player) => c.id === this.socket.id).id,
+                player: this.store.clients.find((c: Player) => c.id === this.socket.id)!.id,
                 duplicate: false
             })
             const hintersSoFar = hints.map((hint: Hint) => hint.player);
-            const allHintersHinted = this.store.clients.length === 3 ? hintersSoFar.length === 4 : this.store.clients.filter((client: Player) => !client.isGuessing).every((client: Player) => hintersSoFar.includes(client.id))
+            const allHintersHinted = this.store.clients.length === 3 ? hintersSoFar.length === 4 : this.store.clients.filter((client: Player) => client.role !== PlayerRole.GUESSER).every((client: Player) => hintersSoFar.includes(client.id))
             console.info(`[INFO] Submitting hint of client ${this.socket.id}`);
             if (allHintersHinted) {
                 this._clearAllTimeouts()
@@ -141,7 +150,7 @@ export class Room2 {
         this.socket.on("disconnect", () => {
             // remove from clients
             console.info(`[DISCONNECT] Client ${this.socket.id} Disconnected from ${this.roomId}`);
-            const disconnectedPlayer: Player = this.store.clients.find((client: Player) => client.id === this.socket.id)
+            const disconnectedPlayer: Player | undefined = this.store.clients.find((client: Player) => client.id === this.socket.id);
             this.store.clients = this.store.clients.filter((client: Player) => client.id !== this.socket.id)
             // when all players disconnected
 
@@ -152,17 +161,17 @@ export class Room2 {
                 return;
             }
             if (disconnectedPlayer) this._emitPlayerDisconnected(disconnectedPlayer)
-            if (disconnectedPlayer.isAdmin) {
+            if (disconnectedPlayer && disconnectedPlayer.role === PlayerRole.ADMIN_HINTER) {
                 this._appointNewAdmin(this.store.clients)
                 this.emitAllPlayers(this.store.clients);
             }
-            if (disconnectedPlayer.isGuessing) this._appointNewGuesser()
+            if (disconnectedPlayer && disconnectedPlayer.role === PlayerRole.GUESSER) this._appointNewGuesser()
         })
     }
 
     _appointNewAdmin(clients: Player[]) {
-        const newAdminIndex = (Math.abs(clients.findIndex(p => p.isGuessing) - 1)) % clients.length;
-        clients[newAdminIndex].isAdmin = true;
+        const newAdminIndex = (Math.abs(clients.findIndex(p => p.role === PlayerRole.GUESSER) - 1)) % clients.length;
+        clients[newAdminIndex].role = PlayerRole.ADMIN_HINTER;
     }
 
     _appointNewGuesser() {
@@ -199,14 +208,7 @@ export class Room2 {
     }
 
     resetGameState() {
-        const config = new GameConfig(
-            2,
-            6_000,
-            6_000,
-            10_000,
-            2
-        )
-        this.store.gameState = new GameState(config)
+        this.store.gameState = new GameState(this.gameConfig)
     }
 
     private startGame() {

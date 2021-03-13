@@ -1,7 +1,7 @@
 import {GameEvent} from "./GameEvent";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
-import {Player} from "./Player";
+import {Player, PlayerRole} from "./Player";
 import {GameState} from "./GameState";
 
 export class GameOver implements GameEvent {
@@ -11,25 +11,27 @@ export class GameOver implements GameEvent {
     }
 
     handle(store: GameStore): Promise<void> {
-        this.gameOver(store);
-        return Promise.resolve(undefined);
+        return new Promise(resolve => this.gameOver(store, resolve))
     }
 
     cancel(): void {
         this.timeouts.forEach(clearTimeout);
     }
 
-    private gameOver(store: GameStore) {
+    private timingFor(event: string) {
         const intervalMs = 2000;
-        const timingFor = (event: string) => new Map([["announce", intervalMs], ["transition", intervalMs * 2]]).get(event);
-        this.timeouts.push(setTimeout(this.announceGameOver.bind(this), timingFor("announce")));
-        this.timeouts.push(setTimeout(this.doGameOver.bind(this, store), timingFor("transition")));
+        return new Map([["announce", intervalMs], ["transition", intervalMs * 2]]).get(event);
     }
 
-    private doGameOver(store: GameStore) {
+    private gameOver(store: GameStore, resolve: (value: (PromiseLike<void> | void)) => void) {
+        this.timeouts.push(setTimeout(this.announceGameOver.bind(this), this.timingFor("announce")));
+        this.timeouts.push(setTimeout(this.doGameOver.bind(this, store, resolve), this.timingFor("transition")));
+    }
+
+    private doGameOver(store: GameStore, resolve: (value: (PromiseLike<void> | void)) => void) {
         const {clients, gameState}: { clients: Player[], gameState: GameState } = store;
         clients.forEach((client: Player) => {
-            client.isGuessing = false;
+            if (client.role === PlayerRole.GUESSER) client.role = PlayerRole.HINTER;
             client.isReady = false;
         })
         gameState.inLobby = true;
@@ -37,6 +39,7 @@ export class GameOver implements GameEvent {
         this.emitter.emit('show-all-players', {players: clients})
         const results = gameState.rounds.map(round => round.points)
         this.emitter.emit("game-result", {results})
+        resolve();
     }
 
     private announceGameOver() {

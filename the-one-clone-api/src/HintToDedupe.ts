@@ -1,7 +1,7 @@
 import {GameEvent} from "./GameEvent";
 import {GameStore} from "./GameStore";
 import {Emitter} from "./Emitter";
-import {Player} from "./Player";
+import {Player, PlayerRole} from "./Player";
 import {Turn} from "./Turn";
 import {Hint} from "./Hint";
 import {Round} from "./Round";
@@ -66,7 +66,7 @@ export class HintToDedupe implements GameEvent {
         const {rounds, currentRound} = gameState;
         const round: Round = rounds[currentRound]
         const turn: Turn = round.turns[round.currentTurn]
-        const hinters = clients.filter((client: Player) => !client.isGuessing);
+        const hinters = clients.filter((client: Player) => client.role !== PlayerRole.GUESSER);
         this.emitHintsToHinters(hinters, turn.hints, currentRound, round.currentTurn)
         turn.reveal = true
         this.emitRevealToHinters(hinters, turn.reveal, currentRound, round.currentTurn)

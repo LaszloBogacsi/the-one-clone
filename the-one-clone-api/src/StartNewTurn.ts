@@ -2,8 +2,7 @@ import {GameEvent} from "./GameEvent";
 import {WordRepository} from "./Room2";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
-import Timeout = NodeJS.Timeout;
-import {Player} from "./Player";
+import {Player, PlayerRole} from "./Player";
 import {Turn} from "./Turn";
 import {Round} from "./Round";
 import {GameState} from "./GameState";
@@ -63,9 +62,9 @@ export class StartNewTurn implements GameEvent {
         const announceRoles = (): void => {
             const {rounds, currentRound} = gameState;
             const round: Round = rounds[currentRound];
-            clients.forEach((client: Player) => client.isGuessing = false);
+            clients.filter((client: Player) => client.role === PlayerRole.GUESSER).forEach(client => client.role = PlayerRole.HINTER);
             const guesserId = (round.currentTurn + 1) % clients.length;
-            clients[guesserId].isGuessing = true;
+            clients[guesserId].role = PlayerRole.GUESSER;
             const guesser: Player = clients[guesserId];
             this.emitRoleGeneral(guesser);
             console.info(`[Roles] announcing guesser is ${guesser.playerName}, in ${this.roomId} room`);
@@ -77,7 +76,7 @@ export class StartNewTurn implements GameEvent {
             {callable: this.startNewTurn.bind(this, resolve), delayMs: timingFor("startNewTurn")},
 
         ]
-        timedActions.forEach(this.startTimedAction)
+        timedActions.forEach(this.startTimedAction.bind(this))
     }
 
     private startTimedAction(timedAction: { callable: CallableFunction, delayMs: number }) {
@@ -89,10 +88,11 @@ export class StartNewTurn implements GameEvent {
         const {gameState}: { gameState: GameState } = store;
         const {rounds, currentRound} = gameState;
         const turn = new Turn(this.wordRepository.getRandomWord());
-        let round = rounds[currentRound];
+        const round = rounds[currentRound];
 
-        round = {...round, turns: [...round.turns, turn], currentTurn: round.currentTurn + 1}
-        this.emitNewTurn(turn, currentRound, round.currentTurn)
+        const newRound = {...round, turns: [...round.turns, turn], currentTurn: round.currentTurn + 1}
+        rounds[currentRound] = newRound;
+        this.emitNewTurn(turn, currentRound, newRound.currentTurn)
     }
 
     private startNewTurn(resolve: (value?: void) => void) {
@@ -114,7 +114,7 @@ export class StartNewTurn implements GameEvent {
     }
 
     private emitRoleGeneral(guesser: Player): void {
-        this.emitter.emit('player-roles', {guesser: {id: guesser.id, name: guesser.playerName}})
+        this.emitter.emit('player-roles', {guesser: {id: guesser.id}})
     }
 
     private emitRoundEnd(currentRound: number): void {

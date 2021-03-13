@@ -1,6 +1,6 @@
 import {Namespace, Socket} from "socket.io";
 import {Room2} from "./Room2";
-import {Player} from "./Player";
+import {Player, PlayerRole} from "./Player";
 
 const sinon = require('sinon')
 var assert = require('assert');
@@ -14,51 +14,39 @@ describe('Room', function () {
         player = {} as Player;
     })
 
+    const guesserPlayer: Player = {id: Math.ceil(Math.random() * 100).toString(), playerName: "Player1", isReady: true, role: PlayerRole.GUESSER}
+    const hinterPlayer: Player = {id: Math.ceil(Math.random() * 100).toString(), playerName: "Player2", isReady: true, role: PlayerRole.HINTER}
+
     describe('#appointNewAdmin()', function () {
         it('should appoint new admin from leftover players when guesser can not be admin', function () {
-            const player1 = {id: "1", isGuessing: true, isAdmin: false, playerName: "Player1", isReady: true}
-            const player2 = {id: "2", isGuessing: false, isAdmin: false, playerName: "Player2", isReady: true}
-
-            const players: Player[] = [player1, player2]
+            const players: Player[] = [{...guesserPlayer}, {...hinterPlayer}]
             room._appointNewAdmin(players)
-            assert.strictEqual(player2.isAdmin, true)
+            assert.strictEqual(players[1].role, PlayerRole.ADMIN_HINTER)
         });
 
         it('should appoint new admin and it should be one before the guesser', function () {
-            const player1 = {id: "1", isGuessing: false, isAdmin: false, playerName: "Player1", isReady: true}
-            const player2 = {id: "2", isGuessing: true, isAdmin: false, playerName: "Player2", isReady: true}
-            const player3 = {id: "3", isGuessing: false, isAdmin: false, playerName: "Player3", isReady: true}
-
-            const players: Player[] = [player1, player2, player3]
+            const players: Player[] = [{...hinterPlayer}, {...guesserPlayer}, {...hinterPlayer}]
             room._appointNewAdmin(players)
-            assert.strictEqual(player1.isAdmin, true)
-            players.filter(p => p !== player1).forEach(player => {
-                assert.strictEqual(player.isAdmin, false)
+            assert.strictEqual(players[0].role, PlayerRole.ADMIN_HINTER)
+            players.filter(p => p !== players[0]).forEach(player => {
+                assert.notStrictEqual(player.role, PlayerRole.ADMIN_HINTER)
             })
         });
 
         it('should appoint new admin when guesser is last one', function () {
-            const player1 = {id: "1", isGuessing: false, isAdmin: false, playerName: "Player1", isReady: true}
-            const player2 = {id: "2", isGuessing: false, isAdmin: false, playerName: "Player2", isReady: true}
-            const player3 = {id: "3", isGuessing: true, isAdmin: false, playerName: "Player3", isReady: true}
-
-            const players: Player[] = [player1, player2, player3]
+            const players: Player[] = [{...hinterPlayer}, {...hinterPlayer}, {...guesserPlayer}]
             room._appointNewAdmin(players)
-            assert.strictEqual(player2.isAdmin, true)
-            players.filter(p => p !== player2).forEach(player => {
-                assert.strictEqual(player.isAdmin, false)
+            assert.strictEqual(players[1].role, PlayerRole.ADMIN_HINTER)
+            players.filter(p => p !== players[1]).forEach(player => {
+                assert.notStrictEqual(player.role, PlayerRole.ADMIN_HINTER)
             })
         });
         it('should appoint new admin when guesser is first one', function () {
-            const player1 = {id: "1", isGuessing: true, isAdmin: false, playerName: "Player1", isReady: true}
-            const player2 = {id: "2", isGuessing: false, isAdmin: false, playerName: "Player2", isReady: true}
-            const player3 = {id: "3", isGuessing: false, isAdmin: false, playerName: "Player3", isReady: true}
-
-            const players: Player[] = [player1, player2, player3]
+            const players: Player[] = [{...guesserPlayer}, {...hinterPlayer}, {...hinterPlayer}]
             room._appointNewAdmin(players)
-            assert.strictEqual(player2.isAdmin, true)
-            players.filter(p => p !== player2).forEach(player => {
-                assert.strictEqual(player.isAdmin, false)
+            assert.strictEqual(players[1].role, PlayerRole.ADMIN_HINTER)
+            players.filter(p => p !== players[1]).forEach(player => {
+                assert.notStrictEqual(player.role, PlayerRole.ADMIN_HINTER)
             })
         });
 

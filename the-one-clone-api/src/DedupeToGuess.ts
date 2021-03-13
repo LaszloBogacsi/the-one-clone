@@ -1,7 +1,7 @@
 import {GameEvent} from "./GameEvent";
 import {GameStore} from "./GameStore";
 import {Emitter} from "./Emitter";
-import {Player} from "./Player";
+import {Player, PlayerRole} from "./Player";
 import {Turn} from "./Turn";
 import {Hint} from "./Hint";
 import {Round} from "./Round";
@@ -44,7 +44,7 @@ export class DedupeToGuess implements GameEvent {
         const turn: Turn = round.turns[round.currentTurn];
 
         const sortByDuplicatesLast = (a: Hint, b: Hint) => +a - +b;
-        const guesser = store.clients.filter((client: Player) => client.isGuessing);
+        const guesser = store.clients.filter((client: Player) => client.role === PlayerRole.GUESSER);
         this.emitHintsToGuesser(guesser, turn.hints.map(hint => hint.duplicate ? {...hint, hint: "Duplicate"} : hint).sort(sortByDuplicatesLast), currentRound, round.currentTurn);
         turn.reveal = true;
         this.emitRevealToGuesser(guesser, turn.reveal, currentRound, round.currentTurn);

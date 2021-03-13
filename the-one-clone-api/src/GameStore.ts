@@ -1,10 +1,9 @@
 import Timeout = NodeJS.Timeout;
 import {Player} from "./Player";
 import {GameState} from "./GameState";
+import {Adapter} from "socket.io-adapter";
 
-export interface GameStore {
+export interface GameStore{
     clients: Player[];
     gameState: GameState;
-    countDownTimeout: Timeout;
-    countDownInterval: Timeout;
 }

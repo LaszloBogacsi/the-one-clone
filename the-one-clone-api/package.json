@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node_modules/.bin/tsc && node dist/www.js",
     "watch": "nodemon src/www.ts",
-    "test": "mocha --recursive \"./**/*.test.js\""
+    "test": "node_modules/mocha/bin/mocha --require ts-node/register --recursive \"./src/**/*.test.ts\""
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",

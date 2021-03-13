@@ -89,8 +89,8 @@ export function Home2() {
                 name: player.playerName,
                 isReady: player.isReady,
                 isMe: player.id === socket!.id,
-                isAdmin: player.isAdmin,
-                isGuessing: player.isGuessing
+                isAdmin: player.role === "hinter-admin",
+                isGuessing: player.role === "guesser"
             } as Player
         }
 
@@ -138,7 +138,7 @@ export function Home2() {
             dispatchGameAction({type: 'addRound', payload: {...data}});
             dispatchGameAction({type: 'announceRound', payload: {announceRound: true}});
         }
-        const playerRolesHandler = (data: { guesser: { id: string, name: string } }) => {
+        const playerRolesHandler = (data: { guesser: { id: string} }) => {
             if (me?.id === data.guesser.id) {
                 setMe({...me, isGuessing: true})
             }
