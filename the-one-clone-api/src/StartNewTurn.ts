@@ -1,8 +1,12 @@
 import {GameEvent} from "./GameEvent";
-import {GameState, Player, Round, Turn, WordRepository} from "./Room2";
+import {WordRepository} from "./Room2";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
 import Timeout = NodeJS.Timeout;
+import {Player} from "./Player";
+import {Turn} from "./Turn";
+import {Round} from "./Round";
+import {GameState} from "./GameState";
 
 export class StartNewTurn implements GameEvent {
     private readonly timeouts: number[] = []
@@ -85,8 +89,9 @@ export class StartNewTurn implements GameEvent {
         const {gameState}: { gameState: GameState } = store;
         const {rounds, currentRound} = gameState;
         const turn = new Turn(this.wordRepository.getRandomWord());
-        const round = rounds[currentRound];
-        round.addTurn(turn)
+        let round = rounds[currentRound];
+
+        round = {...round, turns: [...round.turns, turn], currentTurn: round.currentTurn + 1}
         this.emitNewTurn(turn, currentRound, round.currentTurn)
     }
 
@@ -101,7 +106,7 @@ export class StartNewTurn implements GameEvent {
     }
 
     private startNewRound(store: GameStore): void {
-        const round = new Round();
+        const round = new Round(store.gameState.gameConfig.maxTurn);
         const {addRound} = store.gameState;
         addRound.call(store.gameState, round)
         this.emitRound(round, store.gameState.currentRound)

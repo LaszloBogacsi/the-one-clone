@@ -1,6 +1,8 @@
 import {Namespace, Socket} from "socket.io";
-import {Hint, Player, Room2, Turn, Round, GameConfig} from "./Room2";
+import {Room2} from "./Room2";
+import {Player} from "./Player";
 
+const sinon = require('sinon')
 var assert = require('assert');
 const {describe, it} = require("mocha");
 describe('Room', function () {
@@ -8,7 +10,7 @@ describe('Room', function () {
     let room: Room2;
     let player: Player;
     beforeEach(function () {
-        room = new Room2({io: {} as any as Namespace, roomId: "", playerName: "", action: "", socket: {} as any as Socket});
+        room = new Room2({io: {} as any as Namespace, roomId: "", playerName: "", action: "create", socket: {} as any as Socket, wordRepository: {getRandomWord: sinon.spy()}});
         player = {} as Player;
     })
 

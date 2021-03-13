@@ -1,8 +1,13 @@
-import {Hint, Player, Room2, Turn, Round, GameConfig} from "./Room2";
+import {Room2} from "./Room2";
 import {HintToDedupe} from "./HintToDedupe";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
 import Timeout = NodeJS.Timeout;
+import {Player} from "./Player";
+import {Turn} from "./Turn";
+import {Hint} from "./Hint";
+import {Round} from "./Round";
+import {GameConfig} from "./GameConfig";
 
 const sinon = require('sinon')
 

@@ -1,5 +1,6 @@
-import {GameState, Player} from "./Room2";
 import Timeout = NodeJS.Timeout;
+import {Player} from "./Player";
+import {GameState} from "./GameState";
 
 export interface GameStore {
     clients: Player[];

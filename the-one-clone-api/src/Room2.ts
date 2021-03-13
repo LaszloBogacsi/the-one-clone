@@ -7,99 +7,33 @@ import {GuessToNewTurn} from "./GuessToNewTurn";
 import {GameOver} from "./GameOver";
 import {GameEvent} from "./GameEvent";
 import {Countdown} from "./Countdown";
-
-
-export interface Player {
-    id: string
-    playerName: string
-    isReady: boolean
-    isAdmin: boolean // TODO: use Role: "ADMIN" insted
-    isGuessing: boolean
-}
-
-export type TurnResult = 'success' | 'failure' | 'skip'
-
-export class Turn {
-    public hints: Hint[];
-    public reveal: boolean;
-    public guess: string;
-    public result?: TurnResult;
-    public deduplication: boolean;
-    public skip: boolean;
-
-    constructor(public readonly secretWord: string) {
-        this.hints = [];
-        this.reveal = false;
-        this.guess = "";
-        this.deduplication = false;
-        this.skip = false;
-    }
-}
-
-export class Hint {
-    constructor(
-        public readonly player: Player,
-        public readonly hint: string,
-        public duplicate: boolean) {
-    }
-}
-
-export class Round {
-    public turns: Turn[] = []
-    public points = 0
-    public currentTurn = -1
-
-    addTurn(turn: Turn) {
-        this.turns.push(turn);
-        this.currentTurn += 1;
-    }
-}
-
-export class GameConfig {
-    constructor(
-        public maxRounds: number,
-        public hintTimeout: number,
-        public guessTimeout: number,
-        public dedupeTimeout: number,
-        public maxTurn: number) {
-    }
-}
-
-export class GameState {
-    public gameConfig: GameConfig;
-    public rounds: Round[] = []
-    public inLobby: boolean
-    public currentRound: number
-
-    constructor(gameConfig: GameConfig) {
-        this.gameConfig = gameConfig
-        this.inLobby = true
-        this.currentRound = -1
-    }
-
-    addRound(round: Round): void {
-        this.rounds.push(round)
-        this.currentRound += 1
-    }
-
-}
+import {Player} from "./Player";
+import {Turn} from "./Turn";
+import {Hint} from "./Hint";
+import {Round} from "./Round";
+import {GameConfig} from "./GameConfig";
+import {GameState} from "./GameState";
 
 type GameEventType = 'startNewTurn' | 'hintToDedupe' | 'dedupeToGuess' | 'guessToNewTurn' | 'hintCountDown' | 'dedupeCountDown' | 'guessCountDown'
+
 export interface WordRepository {
     getRandomWord: () => string
 }
+
+type RoomAction = "join" | "create"
+
 export class Room2 {
     private io: Namespace;
     private roomId: string
     private playerName: string
-    private action: string
+    private action: RoomAction
     private socket: Socket
     private store: any
     private gameLoopEvents: Map<GameEventType, GameEvent>;
     private readonly emitter: Emitter;
     private wordRepository: WordRepository;
 
-    constructor(param: { io: Namespace, roomId: string, playerName: string, action: string, socket: Socket, wordRepository: WordRepository }) {
+    constructor(param: { io: Namespace, roomId: string, playerName: string, action: RoomAction, socket: Socket, wordRepository: WordRepository }) {
         this.io = param.io;
         this.roomId = param.roomId;
         this.playerName = param.playerName;
@@ -275,23 +209,20 @@ export class Room2 {
         this.store.gameState = new GameState(config)
     }
 
-    _emitStartGame(inLobby: boolean) {
-        this.emitter.emit('start-game', {inLobby})
-    }
-
-    startGame() {
+    private startGame() {
         this.resetGameState()
         const {gameState} = this.store;
-
-        // move to game from lobby
         gameState.inLobby = false;
-        this._emitStartGame(this.store.gameState.inLobby)
-
+        this._emitStartGame(gameState.inLobby)
         console.info(`[START] All players ready, Game starts in ${this.roomId} room`);
         this.startNewTurn()
     }
 
-    public async startNewTurn() {
+    _emitStartGame(inLobby: boolean) {
+        this.emitter.emit('start-game', {inLobby})
+    }
+
+    private async startNewTurn() {
         await this.playNewTurn();
         this._isGameOver() ? await this.gameOver() : await this.startNewTurn()
     }

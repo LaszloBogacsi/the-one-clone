@@ -1,7 +1,11 @@
 import {GameEvent} from "./GameEvent";
 import {GameStore} from "./GameStore";
 import {Emitter} from "./Emitter";
-import {GameState, Hint, Player, Round, Turn} from "./Room2";
+import {Player} from "./Player";
+import {Turn} from "./Turn";
+import {Hint} from "./Hint";
+import {Round} from "./Round";
+import {GameState} from "./GameState";
 
 export class DedupeToGuess implements GameEvent {
     private readonly timeouts: number[] = []

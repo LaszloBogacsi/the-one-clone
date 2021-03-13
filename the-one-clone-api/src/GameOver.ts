@@ -1,7 +1,8 @@
 import {GameEvent} from "./GameEvent";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
-import {GameState, Player} from "./Room2";
+import {Player} from "./Player";
+import {GameState} from "./GameState";
 
 export class GameOver implements GameEvent {
     private readonly timeouts: number[] = []
