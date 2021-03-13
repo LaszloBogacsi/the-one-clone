@@ -1,7 +1,9 @@
 import {GameEvent} from "./GameEvent";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
-import {GameConfig, GameState, Round, Turn, TurnResult} from "./Room2";
+import {Turn, TurnResult} from "./Turn";
+import {Round} from "./Round";
+import {GameState} from "./GameState";
 
 export class GuessToNewTurn implements GameEvent {
 
@@ -21,31 +23,34 @@ export class GuessToNewTurn implements GameEvent {
 
     private revealTurnResult(store: GameStore): void {
         const {gameState}: { gameState: GameState } = store;
-        const {rounds, currentRound, gameConfig} = gameState;
+        const {rounds, currentRound} = gameState;
         const round: Round = rounds[currentRound];
         const turn: Turn = round.turns[round.currentTurn];
 
         turn.result = GuessToNewTurn.getTurnResult(turn);
 
-        GuessToNewTurn.calculatePoints(turn.result, round, gameConfig) // TODO: Don't mutate rounds and gameConfig, return value instead
-        this.emitTurnResults(currentRound, round.currentTurn, round.points, gameConfig.maxTurn, turn.result)
+        const {points, effectiveMaxTurn} = GuessToNewTurn.calculatePoints(turn.result, round);
+        const newRound = {...round, points, effectiveMaxTurn};
+        rounds[currentRound] = newRound
+        this.emitTurnResults(currentRound, newRound.currentTurn, newRound.points, newRound.effectiveMaxTurn, turn.result)
     }
 
-    private static getTurnResult(turn: Turn): TurnResult {
+    static getTurnResult(turn: Turn): TurnResult {
         const match = turn.guess.trim().toUpperCase() === turn.secretWord.toUpperCase();
         return turn.skip ? 'skip' : match ? 'success' : 'failure'
     }
 
-    private static calculatePoints(result: TurnResult, round: Round, gameConfig: GameConfig): void {
+    private static calculatePoints(result: TurnResult, round: Round): {points: number, effectiveMaxTurn: number} {
         switch (result) {
             case 'success':
-                round.points += 1
-                break;
+                return {points: round.points + 1, effectiveMaxTurn: round.effectiveMaxTurn}
             case 'failure':
-                round.currentTurn === gameConfig.maxTurn ? round.points = Math.max(0, round.points - 1) : gameConfig.maxTurn -= 1 // TODO: Maybe a round shoud have an effective max turn
-                break;
+                return {
+                    points: round.currentTurn === round.effectiveMaxTurn ? Math.max(0, round.points - 1) : round.points,
+                    effectiveMaxTurn: round.currentTurn === round.effectiveMaxTurn ? round.effectiveMaxTurn : round.effectiveMaxTurn - 1
+                }
             case "skip":
-                break;
+                return {points: round.points, effectiveMaxTurn: round.effectiveMaxTurn};
             default:
                 throw new Error(`Unsupported turn result: ${result}`);
         }
