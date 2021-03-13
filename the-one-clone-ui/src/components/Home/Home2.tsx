@@ -267,7 +267,7 @@ export function Home2() {
     }, [players])
 
     // @ts-ignore
-    const connectWebsocket = (action: string, playerName: string) => setSocket(io(`ws://localhost:3000`, {
+    const connectWebsocket = (action: string, playerName: string) => setSocket(io(`ws://${window.location.hostname}:3000`, {
         forceNew: false,
         query: {roomId, playerName, action}
     }));
@@ -315,13 +315,8 @@ export function Home2() {
 
     // TODO: todos here
     /*
-        guesser leaves -> turn over start, start new turn
-        admin can not be guesser
         refactor announcements to have one boolean switch (as only one can be on at a time)
-        backend: keep track and cancel transition timeouts when game over, or turn/round over
-        backend: refactor bits to keep timeout definitions on the same level, make all timeouts configurable for given transitions.
         create game config settings from ui and interactions: max round number, timeouts.
-        backend: refactor emithandlers, make the game flow more obvious.
 
         last implementations: player limits (min 3 players, max 7 players)
      */

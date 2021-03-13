@@ -19,6 +19,7 @@ export class Countdown implements GameEvent {
     cancel(): void {
         this.timeouts.timeout.forEach(clearTimeout);
         this.timeouts.interval.forEach(clearInterval);
+        this.onResolve();
     }
 
     private startCountDown(transition: (value?: void) => void) {

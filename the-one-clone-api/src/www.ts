@@ -34,17 +34,26 @@ const io = socketIO(server, {
     TODO
     refactor to reducer pattern
 */
+const fs = require('fs')
 
 const sockio = io.of("/")
+function readWords() {
+    const file = fs.readFileSync('./src/words.txt', {encoding: 'utf8'});
+    return [...file.split("\n").map((d: string) => d.trim())]
+    // return ["secret", "words", "guessing"];
+
+}
+
 sockio.on('connection', async (socket: Socket) => {
         console.log("connected...")
         // @ts-ignore
         const {roomId, playerName, action} = socket.handshake.query
         console.log(`${roomId}, ${playerName}, ${action}`)
+        const words = readWords();
         const wordRepository: WordRepository = {
             getRandomWord: (): string =>  {
-                const secretWords = ["secret", "words", "guessing"];
-                return secretWords[Math.floor(Math.random() * secretWords.length)]
+
+                return words[Math.floor(Math.random() * words.length)]
             }
         }
         const room = new Room2({io: sockio, roomId, playerName, action, socket, wordRepository})

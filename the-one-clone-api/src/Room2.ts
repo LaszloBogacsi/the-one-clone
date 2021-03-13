@@ -29,7 +29,7 @@ export class Room2 {
     private action: RoomAction
     private socket: Socket
     private store: any
-    private gameLoopEvents: Map<GameEventType, GameEvent>;
+    // private gameLoopEvents: Map<GameEventType, GameEvent>;
     private readonly emitter: Emitter;
     private wordRepository: WordRepository;
     private readonly gameConfig: GameConfig;
@@ -41,15 +41,15 @@ export class Room2 {
         this.action = param.action;
         this.socket = param.socket;
         this.gameConfig = new GameConfig(
-            2,
-            6_000,
-            6_000,
-            10_000,
-            2
+            5,
+            60_000,
+            60_000,
+            20_000,
+            12
         )
         this.store = param.io.adapter;
         this.emitter = new Emitter(this.io, this.roomId);
-        this.gameLoopEvents = new Map();
+        // this.gameLoopEvents = new Map();
         this.wordRepository = param.wordRepository;
 
     }
@@ -118,7 +118,8 @@ export class Room2 {
             console.info(`[INFO] Submitting hint of client ${this.socket.id}`);
             if (allHintersHinted) {
                 this._clearAllTimeouts()
-                this.transition();
+                this.store.gameLoopEvents.get("hintCountDown")!.cancel()
+                // this.transition();
             }
         })
         this.socket.on('on-player-guess-submit', (data: { guess: string, skip: boolean }) => {
@@ -131,7 +132,7 @@ export class Room2 {
             console.info(`[INFO] Submitting guess, client ${this.socket.id}`);
 
             this._clearAllTimeouts()
-            this.transition()
+            this.store.gameLoopEvents.get("guessCountDown")!.cancel()
         })
 
         this.socket.on("toggle-hint-as-duplicate", (data: { hintId: number }) => {
@@ -143,11 +144,11 @@ export class Room2 {
             this.emitter.emit('turn-hints', {hints: turn.hints, currentRound, currentTurn: round.currentTurn})
         })
 
-        this.socket.on("dedupe-submit", () => this.transition())
+        this.socket.on("dedupe-submit", () => this.store.gameLoopEvents.get("dedupeCountDown")!.cancel())
     }
 
     onDisconnect() {
-        this.socket.on("disconnect", () => {
+        this.socket.on("disconnect",  () => {
             // remove from clients
             console.info(`[DISCONNECT] Client ${this.socket.id} Disconnected from ${this.roomId}`);
             const disconnectedPlayer: Player | undefined = this.store.clients.find((client: Player) => client.id === this.socket.id);
@@ -165,7 +166,7 @@ export class Room2 {
                 this._appointNewAdmin(this.store.clients)
                 this.emitAllPlayers(this.store.clients);
             }
-            if (disconnectedPlayer && disconnectedPlayer.role === PlayerRole.GUESSER) this._appointNewGuesser()
+            if (disconnectedPlayer && disconnectedPlayer.role === PlayerRole.GUESSER) this.appointNewGuesser()
         })
     }
 
@@ -174,8 +175,9 @@ export class Room2 {
         clients[newAdminIndex].role = PlayerRole.ADMIN_HINTER;
     }
 
-    _appointNewGuesser() {
-
+    private appointNewGuesser() {
+        this._clearAllTimeouts();
+        this.startNewTurn();
     }
 
     showGameState() {
@@ -183,7 +185,8 @@ export class Room2 {
     }
 
     _clearAllTimeouts() {
-        for (const event of this.gameLoopEvents.values()) {
+        console.info(`[INFO] Clearing timeouts`);
+        for (const event of this.store.gameLoopEvents.values()) {
             this._clearEventTimeouts(event);
         }
     }
@@ -236,12 +239,13 @@ export class Room2 {
         gameOver.cancel();
     }
 
-    private transition() {
+    transition() {
+        console.log("[INFO] Transitioning...")
         // A reference of this is pointing to a Promise resolve
     }
 
     private async playNewTurn() {
-        for (const event of this.gameLoopEvents.values()) {
+        for (const event of this.store.gameLoopEvents.values()) {
             this._clearAllTimeouts();
             await event.handle(this.store);
         }
@@ -263,7 +267,7 @@ export class Room2 {
     }
 
     private initLoopEvents() {
-        this.gameLoopEvents = new Map<GameEventType, GameEvent>([
+        this.store.gameLoopEvents = new Map<GameEventType, GameEvent>([
             ['startNewTurn', new StartNewTurn(this.roomId, this.emitter, this.wordRepository)],
             ['hintCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.hintTimeout / 1000, this.transition)],
             ['hintToDedupe', new HintToDedupe(this.emitter)],
