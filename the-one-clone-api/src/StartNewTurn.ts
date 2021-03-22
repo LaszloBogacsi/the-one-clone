@@ -139,4 +139,8 @@ export class StartNewTurn implements GameEvent {
         this.emitter.emit('start-turn', {message: "start turn"})
     }
 
+    private emitAllPlayers(clients: Player[]) {
+        this.emitter.emit('show-all-players', {players: clients})
+    }
+
 }
