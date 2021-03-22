@@ -1,7 +1,6 @@
 import {HintToDedupe} from "./HintToDedupe";
 import {Emitter} from "./Emitter";
 import {GameStore} from "./GameStore";
-import {Player} from "./Player";
 import {Hint} from "./Hint";
 import {Round} from "./Round";
 import {GameConfig} from "./GameConfig";
@@ -20,20 +19,33 @@ describe('Room', function () {
         gameEvent = new HintToDedupe(stubEmitter);
         playerId = "playerID"
     })
+
     function withHints(hints: Hint[]): GameStore {
         return ({
             gameState: {
                 gameConfig: {} as any as GameConfig,
-                    rounds: [
-                    {turns: [{hints, result: "success", skip:false, guess: "", deduplication: false, reveal: false, secretWord: ""}], points: 0, currentTurn: 0, effectiveMaxTurn: 3}
+                rounds: [
+                    {
+                        turns: [{
+                            hints,
+                            result: "success",
+                            skip: false,
+                            guess: "",
+                            deduplication: false,
+                            reveal: false,
+                            secretWord: ""
+                        }], points: 0, currentTurn: 0, effectiveMaxTurn: 3
+                    }
                 ],
-                    inLobby: false,
-                    currentRound: 0,
-                    addRound: (round: Round) => {}
+                inLobby: false,
+                currentRound: 0,
+                addRound: (round: Round) => {
+                }
             },
             clients: [],
         })
     }
+
     describe('#markDuplicates()', function () {
         it('should should handle empty array', function () {
             const hints: Hint[] = []

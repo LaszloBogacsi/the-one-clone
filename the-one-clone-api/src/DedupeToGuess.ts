@@ -15,7 +15,7 @@ export class DedupeToGuess implements GameEvent {
 
     public handle(store: GameStore): Promise<void> {
         this.emitAnnounceGuessStart(true);
-
+        this.endDeduplication(store);
         return new Promise(resolve => {
             this.timeouts.push(setTimeout(() => {
                 this.emitAnnounceGuessStart(false)
@@ -37,12 +37,22 @@ export class DedupeToGuess implements GameEvent {
         return timings.get(event);
     }
 
-    private revealHintsToGuesser(store: GameStore): void {
+    private endDeduplication(store: GameStore): void {
+        const {round, turn, currentRound} = this.getGameStateDetails(store);
+        turn.deduplication = false;
+        this.emitEndDeduplication(turn.deduplication, currentRound, round.currentTurn);
+    }
+
+    private getGameStateDetails(store: GameStore): { currentRound: number; round: Round; turn: Turn } {
         const {gameState}: { gameState: GameState } = store;
         const {rounds, currentRound} = gameState;
         const round: Round = rounds[currentRound];
         const turn: Turn = round.turns[round.currentTurn];
+        return {round, turn, currentRound}
+    }
 
+    private revealHintsToGuesser(store: GameStore): void {
+        const {round, turn, currentRound} = this.getGameStateDetails(store);
         const sortByDuplicatesLast = (a: Hint, b: Hint) => +a - +b;
         const guesser = store.clients.filter((client: Player) => client.role === PlayerRole.GUESSER);
         this.emitHintsToGuesser(guesser, turn.hints.map(hint => hint.duplicate ? {...hint, hint: "Duplicate"} : hint).sort(sortByDuplicatesLast), currentRound, round.currentTurn);
@@ -60,6 +70,10 @@ export class DedupeToGuess implements GameEvent {
         guesser.forEach((client: Player) => {
             this.emitter.hasClient(client.id) && this.emitter.emitToClient(client.id, 'turn-hints-reveal', {reveal, currentRound, currentTurn});
         });
+    }
+
+    private emitEndDeduplication(deduplication: boolean, currentRound: number, currentTurn: number): void {
+        this.emitter.emit('end-deduplication', {deduplication, currentRound, currentTurn});
     }
 
     private emitAnnounceGuessStart(announce: boolean): void {

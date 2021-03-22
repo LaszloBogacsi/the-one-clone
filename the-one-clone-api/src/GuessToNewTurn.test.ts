@@ -6,7 +6,6 @@ import {Turn} from "./Turn";
 import {Round} from "./Round";
 import {GameConfig} from "./GameConfig";
 import Sinon from "sinon";
-import Timeout = NodeJS.Timeout;
 
 const sinon = require('sinon')
 

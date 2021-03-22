@@ -89,9 +89,9 @@ export function Home2() {
                 name: player.playerName,
                 isReady: player.isReady,
                 isMe: player.id === socket!.id,
-                isAdmin: player.role === "hinter-admin",
+                isAdmin: player.role === "admin-hinter",
                 isGuessing: player.role === "guesser"
-            } as Player
+            }
         }
 
         const playerJoinedHandler = (data: { playerJoined: any }) => {
@@ -165,15 +165,20 @@ export function Home2() {
             payload: {announceDeduplication: true}
         });
         const startDeduplicationHandler = (data: { deduplication: boolean, currentRound: number, currentTurn: number }) => {
-            dispatchGameAction({type: 'setDeduplication', payload: {...data}});
+            deduplicationHandler(data)
             dispatchGameAction({type: 'announceDeduplication', payload: {announceDeduplication: false}});
+        }
+        const endDeduplicationHandler = (data: { deduplication: boolean, currentRound: number, currentTurn: number }) => {
+            deduplicationHandler(data)
+        }
+        const deduplicationHandler = (data: { deduplication: boolean, currentRound: number, currentTurn: number }) => {
+            dispatchGameAction({type: 'setDeduplication', payload: {...data}});
         }
         const guessStartAnnounceHandler = (data: { announceGuessStart: boolean }) => {
             dispatchGameAction({type: 'announceGuessStart', payload: {...data}});
         }
         const turnHintsHandler = (data: { hints: Hint[], currentRound: number, currentTurn: number }) => {
             dispatchGameAction({type: 'addHints', payload: {...data}});
-            dispatchGameAction({type: 'setDeduplication', payload: {deduplication: false, currentRound: data.currentRound, currentTurn: data.currentTurn}});
         }
         const turnHintsRevealHandler = (data: { reveal: boolean, currentRound: number, currentTurn: number }) => {
             dispatchGameAction({type: 'announceGuessStart', payload: {announceGuessStart: false}});
@@ -222,6 +227,7 @@ export function Home2() {
         socket?.on('end-hint', endHintHandler)
         socket?.on('announce-deduplication', announceDeduplicationHandler)
         socket?.on('start-deduplication', startDeduplicationHandler)
+        socket?.on('end-deduplication', endDeduplicationHandler)
         socket?.on('announce-guess-start', guessStartAnnounceHandler)
         socket?.on('turn-hints', turnHintsHandler)
         socket?.on('turn-hints-reveal', turnHintsRevealHandler)
@@ -245,6 +251,7 @@ export function Home2() {
             socket?.off('end-hint', endHintHandler)
             socket?.off('announce-deduplication', announceDeduplicationHandler)
             socket?.off('start-deduplication', startDeduplicationHandler)
+            socket?.off('end-deduplication', endDeduplicationHandler)
             socket?.off('announce-guess-start', guessStartAnnounceHandler)
             socket?.off('turn-hints', turnHintsHandler)
             socket?.off('turn-hints-reveal', turnHintsRevealHandler)
@@ -315,6 +322,8 @@ export function Home2() {
 
     // TODO: todos here
     /*
+        after guess: isMe of undefined...
+        turn result: update guess "but you've guessed.." to display the correct guess.
         refactor announcements to have one boolean switch (as only one can be on at a time)
         create game config settings from ui and interactions: max round number, timeouts.
 

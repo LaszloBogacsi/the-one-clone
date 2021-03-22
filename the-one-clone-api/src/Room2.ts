@@ -65,7 +65,6 @@ export class Room2 {
                     id: this.socket.id,
                     playerName: this.playerName,
                     isReady: !gameState.inLobby,
-                    isGuessing: false,
                     role: PlayerRole.HINTER
                 })
                 console.info(`[JOINED] Client ${this.socket.id} joined room ${this.roomId}`);
@@ -83,7 +82,6 @@ export class Room2 {
                 id: this.socket.id,
                 playerName: this.playerName,
                 isReady: false,
-                isGuessing: false,
                 role: PlayerRole.ADMIN_HINTER
             }]
             console.info(`[CREATE] Client ${this.socket.id} created and joined room ${this.roomId}`);
