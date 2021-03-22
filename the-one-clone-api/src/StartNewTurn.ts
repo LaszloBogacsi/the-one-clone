@@ -64,6 +64,12 @@ export class StartNewTurn implements GameEvent {
             const round: Round = rounds[currentRound];
             clients.filter((client: Player) => client.role === PlayerRole.GUESSER).forEach(client => client.role = PlayerRole.HINTER);
             const guesserId = (round.currentTurn + 1) % clients.length;
+            if (clients[guesserId].role === PlayerRole.ADMIN_HINTER) {
+                const newAdminIndex = (Math.abs(guesserId - 1)) % clients.length;
+                clients[newAdminIndex].role = PlayerRole.ADMIN_HINTER;
+                clients[guesserId].role = PlayerRole.HINTER; // TODO: this is a workaround either create a new emit event or get the frontend to use the role too.
+                this.emitAllPlayers(clients);
+            }
             clients[guesserId].role = PlayerRole.GUESSER;
             const guesser: Player = clients[guesserId];
             this.emitRoleGeneral(guesser);
