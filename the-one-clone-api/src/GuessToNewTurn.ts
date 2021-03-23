@@ -57,6 +57,6 @@ export class GuessToNewTurn implements GameEvent {
     }
 
     private emitTurnResults(currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string): void {
-        this.emitter.emit('turn-result', {currentRound, currentTurn, points, maxTurn, result})
+        this.emitter.emit('turn-result', {currentRound, currentTurn, points, maxTurn, result}) // todo update the guess too
     }
 }

@@ -322,7 +322,6 @@ export function Home2() {
 
     // TODO: todos here
     /*
-        after guess: isMe of undefined...
         turn result: update guess "but you've guessed.." to display the correct guess.
         refactor announcements to have one boolean switch (as only one can be on at a time)
         create game config settings from ui and interactions: max round number, timeouts.
