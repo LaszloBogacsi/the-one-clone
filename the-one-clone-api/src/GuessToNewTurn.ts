@@ -32,7 +32,7 @@ export class GuessToNewTurn implements GameEvent {
         const {points, effectiveMaxTurn} = GuessToNewTurn.calculatePoints(turn.result, round);
         const newRound = {...round, points, effectiveMaxTurn};
         rounds[currentRound] = newRound
-        this.emitTurnResults(currentRound, newRound.currentTurn, newRound.points, newRound.effectiveMaxTurn, turn.result)
+        this.emitTurnResults(currentRound, newRound.currentTurn, newRound.points, newRound.effectiveMaxTurn, turn.result, turn.guess)
     }
 
     static getTurnResult(turn: Turn): TurnResult {
@@ -56,7 +56,7 @@ export class GuessToNewTurn implements GameEvent {
         }
     }
 
-    private emitTurnResults(currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string): void {
-        this.emitter.emit('turn-result', {currentRound, currentTurn, points, maxTurn, result}) // todo update the guess too
+    private emitTurnResults(currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string, guess: string): void {
+        this.emitter.emit('turn-result', {currentRound, currentTurn, points, maxTurn, result, guess})
     }
 }

@@ -185,7 +185,7 @@ export function Home2() {
             dispatchGameAction({type: 'setTurnHintsReveal', payload: {...data}});
 
         }
-        const turnResultHandler = (data: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string }) => dispatchGameAction({
+        const turnResultHandler = (data: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string, guess: string }) => dispatchGameAction({
             type: 'setTurnResult',
             payload: {...data}
         });

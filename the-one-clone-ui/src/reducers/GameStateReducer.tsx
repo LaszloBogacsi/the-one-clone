@@ -88,12 +88,13 @@ export function gameStateReducer(state: GameState, action: GameStateAction): Gam
             return {
                 ...state,
                 rounds: rounds.map((round, index) => {
-                    const {currentRound, currentTurn, points, result} = action.payload;
+                    const {currentRound, currentTurn, points, result, guess} = action.payload;
                     if (index === currentRound) {
                         round.points = points;
                         round.turns.map((turn, index) => {
                             if (index === currentTurn) {
                                 turn.result = result;
+                                turn.guess = guess;
                                 return turn;
                             }
                             return turn;

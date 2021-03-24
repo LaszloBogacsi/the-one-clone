@@ -104,11 +104,6 @@ describe('GuessToNewTurn', function () {
 
     describe('#calculatePoints()', function () {
 
-        afterEach(function () {
-            // @ts-ignore
-            GuessToNewTurn.getTurnResult.restore();
-        })
-
         function addTurn(round: Round, turn: Turn) {
             round.turns.push(turn);
             round.currentTurn += 1;
@@ -118,15 +113,15 @@ describe('GuessToNewTurn', function () {
             const store = withStore();
             const {rounds, gameConfig, currentRound, addRound} = store.gameState;
             const round = new Round(gameConfig.maxTurn)
-            addRound(round)
-            addTurn(round, new Turn(""))
-
-            sinon.stub(GuessToNewTurn, "getTurnResult").returns("success");
+            addRound(round);
+            const secretWord = "testWord"
+            const turn = new Turn(secretWord);
+            addTurn(round, turn);
+            turn.guess = secretWord;
             assert.strictEqual(rounds[currentRound].points, 0);
-
             await gameEvent.handle(store)
             assert.strictEqual(rounds[currentRound].points, 1);
-            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 0, points: 1, maxTurn: 3, result: "success"}])
+            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 0, points: 1, maxTurn: 3, result: "success", guess: turn.guess}])
         });
 
         it('should decrease the max number of turns on failure', async function () {
@@ -135,12 +130,15 @@ describe('GuessToNewTurn', function () {
             const round = new Round(gameConfig.maxTurn);
             round.points = 2;
             addRound(round);
-            addTurn(round, new Turn(""))
-            sinon.stub(GuessToNewTurn, "getTurnResult").returns("failure");
+            const secretWord = "testWord";
+            const wrongGuess = "wrongGuess";
+            const turn = new Turn(secretWord);
+            addTurn(round, turn)
+            turn.guess = wrongGuess
 
             await gameEvent.handle(store);
             assert.strictEqual(rounds[currentRound].effectiveMaxTurn, 2);
-            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 0, points: 2, maxTurn: 2, result: "failure"}])
+            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 0, points: 2, maxTurn: 2, result: "failure", guess: turn.guess}])
 
         });
 
@@ -149,15 +147,20 @@ describe('GuessToNewTurn', function () {
             const {rounds, currentRound, addRound} = store.gameState;
             const round = new Round(1)
             round.points = 2;
-            addTurn(round, new Turn(""))
-            addTurn(round, new Turn(""))
+            const secretWord = "testWord";
+            const wrongGuess = "wrongGuess";
+            const turn = new Turn(secretWord);
+            const turn2 = new Turn(secretWord);
+            addTurn(round, turn)
+            addTurn(round, turn2)
             addRound(round)
-            sinon.stub(GuessToNewTurn, "getTurnResult").returns("failure");
+            turn.guess = wrongGuess;
+            turn2.guess = wrongGuess;
             round.currentTurn = 1
             await gameEvent.handle(store)
             assert.strictEqual(rounds[currentRound].effectiveMaxTurn, 1);
             assert.strictEqual(rounds[currentRound].points, 1);
-            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 1, points: 1, maxTurn: 1, result: "failure"}])
+            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 1, points: 1, maxTurn: 1, result: "failure", guess: turn2.guess}])
 
         });
 
@@ -165,22 +168,28 @@ describe('GuessToNewTurn', function () {
             const store = withStore();
             const {rounds, currentRound, addRound} = store.gameState;
             const round = new Round(2)
-            addTurn(round, new Turn(""))
-            addTurn(round, new Turn(""))
+            const secretWord = "testWord";
+            const wrongGuess = "wrongGuess";
+            const turn = new Turn(secretWord);
+            const turn2 = new Turn(secretWord);
+            addTurn(round, turn)
+            addTurn(round, turn2)
             addRound(round)
-            sinon.stub(GuessToNewTurn, "getTurnResult").returns("failure");
+            turn.guess = `${wrongGuess}1`;
+            turn2.guess = `${wrongGuess}2`;
+            addRound(round)
             round.currentTurn = 0;
             round.points = 0;
             await gameEvent.handle(store)
             assert.strictEqual(rounds[currentRound].points, 0);
             assert.strictEqual(rounds[currentRound].effectiveMaxTurn, 1);
-            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 0, points: 0, maxTurn: 1, result: "failure"}])
+            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 0, points: 0, maxTurn: 1, result: "failure", guess: turn.guess}])
 
             rounds[currentRound].currentTurn = 1
             await gameEvent.handle(store)
             assert.strictEqual(rounds[currentRound].points, 0);
             assert.strictEqual(rounds[currentRound].effectiveMaxTurn, 1);
-            assert.deepStrictEqual(emitSpy.args[1], ["turn-result", {currentRound: 0, currentTurn: 1, points: 0, maxTurn: 1, result: "failure"}])
+            assert.deepStrictEqual(emitSpy.args[1], ["turn-result", {currentRound: 0, currentTurn: 1, points: 0, maxTurn: 1, result: "failure", guess: turn2.guess}])
 
         });
 
@@ -189,17 +198,24 @@ describe('GuessToNewTurn', function () {
             const {rounds, currentRound, addRound} = store.gameState;
             const round = new Round(2)
             round.points = 1;
-            addTurn(round, new Turn(""))
-            addTurn(round, new Turn(""))
-            addTurn(round, new Turn(""))
+            const secretWord = "testWord";
+            const wrongGuess = "wrongGuess";
+            const turn = new Turn(secretWord);
+            const turn2 = new Turn(secretWord);
+            const turn3 = new Turn(secretWord);
+            addTurn(round, turn)
+            addTurn(round, turn2)
+            addTurn(round, turn3)
             addRound(round)
-            sinon.stub(GuessToNewTurn, "getTurnResult").returns("skip");
+            turn.guess = wrongGuess;
+            turn2.guess = wrongGuess;
+            turn3.skip = true;
+            addRound(round)
             round.currentTurn = 2
             await gameEvent.handle(store)
             assert.strictEqual(rounds[currentRound].effectiveMaxTurn, 2);
             assert.strictEqual(rounds[currentRound].points, 1);
-            emitSpy.calledOnceWithExactly(0, 2, 1, 2, "skip")
-            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 2, points: 1, maxTurn: 2, result: "skip"}])
+            assert.deepStrictEqual(emitSpy.args[0], ["turn-result", {currentRound: 0, currentTurn: 2, points: 1, maxTurn: 2, result: "skip", guess: ""}])
         });
     });
 

@@ -10,7 +10,7 @@ export type GameStateAction =
     | { type: 'addTurn', payload: { turn: Turn, currentRound: number, currentTurn: number } }
     | { type: 'addHints', payload: { hints: Hint[], currentRound: number, currentTurn: number } }
     | { type: 'setTurnHintsReveal', payload: { reveal: boolean, currentRound: number, currentTurn: number } }
-    | { type: 'setTurnResult', payload: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string } }
+    | { type: 'setTurnResult', payload: { currentRound: number, currentTurn: number, points: number, maxTurn: number, result: string, guess: string } }
     | { type: 'setGameResult', payload: number[]}
     | { type: 'showRoundResult', payload: {currentRound: number, showRoundResult: boolean}}
     | { type: 'showRoles', payload: {showRoles: boolean}}
