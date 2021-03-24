@@ -11,7 +11,7 @@ export const mockHints: Hint[] = [
     {duplicate: true, hint: "a duplicate hint", player: "5678"},
 ]
 export const mockTurn: Turn = {
-    guess: "some guess", hints: mockHints, reveal: true, secretWord: "Secret Word", result: "success", deduplication: true
+    guess: "some guess", hints: mockHints, reveal: true, secretWord: "Secret Word", result: "failure", deduplication: true
 }
 export const mockPlayers: Player[] = [
     {
@@ -36,7 +36,7 @@ export const mockPlayers: Player[] = [
         id: "3456",
         isAdmin: false,
         isGuessing: false,
-        isMe: true,
+        isMe: false,
         isReady: true,
         name: "PLayer Hinter 2",
         color: "red"
@@ -45,7 +45,7 @@ export const mockPlayers: Player[] = [
         id: "4567",
         isAdmin: false,
         isGuessing: true,
-        isMe: false,
+        isMe: true,
         isReady: true,
         name: "Player Guesser",
         color: "orange"
@@ -93,7 +93,9 @@ export const mockRounds: Round[] = [
 export const mockLobbyParams = {
     players: mockPlayers,
     me: mockMe,
-    onReady: () => console.log("ready")
+    onReady: () => console.log("ready"),
+    hasJoined: true,
+    gameSettings: {maxRound: 2, hintTimeout: 30, guessTimeout: 60}
 }
 
 export const mockResults = [

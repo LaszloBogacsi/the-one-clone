@@ -322,7 +322,6 @@ export function Home2() {
 
     // TODO: todos here
     /*
-        turn result: update guess "but you've guessed.." to display the correct guess.
         refactor announcements to have one boolean switch (as only one can be on at a time)
         create game config settings from ui and interactions: max round number, timeouts.
 
@@ -343,11 +342,11 @@ export function Home2() {
             {(mockSettings.mockLobby.useMock ? mockSettings.mockLobby.visible : (socket && inLobby)) &&
             <div className="lobby">
                 {mockSettings.mockLobby.useMock ?
-                    <Lobby {...mockLobbyParams}>
+                    <Lobby {...mockLobbyParams } {...{hasJoined: query.get("room-id") !== null}}>
                         {mockResults && mockResults.length > 0 ?
                             <GameResults results={makeResultsWithDescription(mockResults)}/> : null}
                     </Lobby> :
-                    <Lobby players={players} me={me} onReady={onReady}>
+                    <Lobby players={players} me={me} onReady={onReady} hasJoined={query.get("room-id") !== null} gameSettings={{maxRound, hintTimeout, guessTimeout}}>
                         {results && results.length > 0 ?
                             <GameResults results={makeResultsWithDescription(results)}/> : null}
                     </Lobby>

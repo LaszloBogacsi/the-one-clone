@@ -8,3 +8,8 @@ export interface Turn {
     guess: string
     result?: string
 }
+
+
+export enum TurnResultType {
+    success ="success", failure = "failure", skip ="skip"
+}

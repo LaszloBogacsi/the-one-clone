@@ -1,5 +1,5 @@
 import React from "react";
-import {Turn} from "../../domain/Turn";
+import {Turn, TurnResultType} from "../../domain/Turn";
 import styles from './styles.module.css'
 import {Player} from "../../domain/Player";
 
@@ -10,14 +10,19 @@ interface TurnResultProps {
 
 export default (props: TurnResultProps) => {
     const {turn, player} = props;
-    const isSuccess = turn.result === 'success';
+
     return (
         <div className={styles.turnResults}>
-            {isSuccess ?
+            {turn.result === TurnResultType.success &&
                 <div>
                     <h1 className={styles.correct}>Correct!</h1>
                     <div>{player && player.isMe ? "You've" : player && player.name} guessed the word</div>
                     <div className={styles.highlight}>{turn.secretWord}</div>
+                </div> }
+            {turn.result === TurnResultType.skip ?
+                <div>
+                    <h1>Skipped!</h1>
+                    <div>The word was <span className={styles.highlight}>{turn.secretWord}</span></div>
                 </div>
                 :
                 <div>

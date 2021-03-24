@@ -22,7 +22,6 @@ export function StartGame(props: StartGameProps) {
 
     const join = useCallback(() => roomId !== null, [roomId]);
 
-
     return (
         <div className={styles.startGame}>
             <div className={styles.playerNameInputWrapper}>
@@ -39,47 +38,6 @@ export function StartGame(props: StartGameProps) {
                 :
                 <Button onClick={onCreateHandler}>Create Room</Button>
             }
-            <div className={styles.wrapper}>
-                <div className={styles.inset}>
-                    <h3>Settings</h3>
-                    <div className={styles.selectors}>
-                        <label htmlFor="maxrounds">Rounds:</label>
-                        <select name="maxRounds" id="maxrounds" disabled={join()}>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                        </select>
-                    </div>
-                    <div className={styles.selectors}>
-                        <label htmlFor="hinttimeout">Hint Timeout</label>
-                        <select name="hinttimeout" id="hinttimeout" disabled={join()}>
-                            <option value="1">30</option>
-                            <option value="2">45</option>
-                            <option selected value="3">60</option>
-                            <option value="4">75</option>
-                            <option value="5">90</option>
-                            <option value="6">110</option>
-                            <option value="7">140</option>
-                        </select>
-                    </div>
-                    <div className={styles.selectors}>
-                        <label htmlFor="guesstimeout">Guess Timeout</label>
-                        <select name="guesstimeout" id="guesstimeout" disabled={join()}>
-                            <option value="1">30</option>
-                            <option value="2">45</option>
-                            <option selected value="3">60</option>
-                            <option value="4">75</option>
-                            <option value="5">90</option>
-                            <option value="6">110</option>
-                            <option value="7">140</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
             <div className={styles.wrapper}>
                 <h3>Rules/information</h3>
                 <p>This is a clone of the Only One game</p>
