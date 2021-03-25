@@ -22,6 +22,10 @@ export const initialGameState: GameState = {
 export function gameStateReducer(state: GameState, action: GameStateAction): GameState {
     const {rounds} = state;
     switch (action.type) {
+        case "updateGameSettings":
+            return {
+                ...state, ...action.payload
+            }
         case "announceGuessStart":
             return {
                 ...state,

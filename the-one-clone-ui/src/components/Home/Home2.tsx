@@ -101,6 +101,11 @@ export function Home2() {
             });
             dispatchPlayerAction({type: "assignColor", payload: [...randomColors]})
         }
+
+        const gameSettingsUpdateHandler = (data: {[key: string]: number}) => {
+            dispatchGameAction({type: 'updateGameSettings', payload: {...data}});
+
+        }
         const playerReadyChangeHandler = (data: { id: string, isReady: boolean }) => dispatchPlayerAction({
             type: 'updatePlayerIsReady',
             payload: data
@@ -216,6 +221,9 @@ export function Home2() {
             dispatchPlayerAction({type: 'removePlayer', payload: toPlayer(data.disconnectedPlayer)})
         })
         socket?.on('player-joined-lobby', playerJoinedHandler)
+        socket?.on('game-settings-maxRound', gameSettingsUpdateHandler)
+        socket?.on('game-settings-hintTimeout', gameSettingsUpdateHandler)
+        socket?.on('game-settings-guessTimeout', gameSettingsUpdateHandler)
         socket?.on('player-ready-change', playerReadyChangeHandler)
         socket?.on('show-game-state', showGameStateHandler)
         socket?.on('start-game', lobbyStateHandler)
@@ -240,6 +248,9 @@ export function Home2() {
 
         return () => {
             socket?.off('player-joined-lobby', playerJoinedHandler)
+            socket?.off('game-settings-maxRound', gameSettingsUpdateHandler)
+            socket?.off('game-settings-hintTimeout', gameSettingsUpdateHandler)
+            socket?.off('game-settings-guessTimeout', gameSettingsUpdateHandler)
             socket?.off('player-ready-change', playerReadyChangeHandler)
             socket?.off('show-game-state', showGameStateHandler)
             socket?.off('start-game', lobbyStateHandler)
@@ -319,11 +330,13 @@ export function Home2() {
     const onDedupeSubmit = () => {
         socket!.emit("dedupe-submit")
     }
+    const onChangeGameSettings = ({key, value}: { key: string, value: number }) => {
+        socket!.emit(`set-${key}`, {newValue: value})
+    }
 
     // TODO: todos here
     /*
         refactor announcements to have one boolean switch (as only one can be on at a time)
-        create game config settings from ui and interactions: max round number, timeouts.
 
         last implementations: player limits (min 3 players, max 7 players)
      */
@@ -346,7 +359,7 @@ export function Home2() {
                         {mockResults && mockResults.length > 0 ?
                             <GameResults results={makeResultsWithDescription(mockResults)}/> : null}
                     </Lobby> :
-                    <Lobby players={players} me={me} onReady={onReady} hasJoined={query.get("room-id") !== null} gameSettings={{maxRound, hintTimeout, guessTimeout}}>
+                    <Lobby players={players} me={me} onReady={onReady} hasJoined={query.get("room-id") !== null} gameSettings={{maxRound, hintTimeout, guessTimeout}} onGameSettingChange={onChangeGameSettings}>
                         {results && results.length > 0 ?
                             <GameResults results={makeResultsWithDescription(results)}/> : null}
                     </Lobby>

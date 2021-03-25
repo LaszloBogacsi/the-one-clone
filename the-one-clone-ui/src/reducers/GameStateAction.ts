@@ -21,3 +21,4 @@ export type GameStateAction =
     | { type: 'setDeduplication', payload: {deduplication: boolean, currentRound: number, currentTurn: number}}
     | { type: 'resetGameState', payload: {}}
     | { type: 'announceGuessStart', payload: {announceGuessStart: boolean}}
+    | { type: 'updateGameSettings', payload: {[key: string]: number}}

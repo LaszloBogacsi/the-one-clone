@@ -95,7 +95,8 @@ export const mockLobbyParams = {
     me: mockMe,
     onReady: () => console.log("ready"),
     hasJoined: true,
-    gameSettings: {maxRound: 2, hintTimeout: 30, guessTimeout: 60}
+    gameSettings: {maxRound: 2, hintTimeout: 30, guessTimeout: 60},
+    onGameSettingChange: (x: any) => console.log(x)
 }
 
 export const mockResults = [

@@ -143,6 +143,18 @@ export class Room2 {
         })
 
         this.socket.on("dedupe-submit", () => this.store.gameLoopEvents.get("dedupeCountDown")!.cancel())
+        this.socket.on("set-maxRound", (data: {newValue: number}) => {
+            this.gameConfig.maxRounds = data.newValue;
+            this.emitter.emit('game-settings-maxRound', {maxRound: this.gameConfig.maxRounds})
+        })
+        this.socket.on("set-hintTimeout", (data: {newValue: number}) => {
+            this.gameConfig.hintTimeout = data.newValue;
+            this.emitter.emit('game-settings-hintTimeout', {hintTimeout: this.gameConfig.hintTimeout})
+        })
+        this.socket.on("set-guessTimeout", (data: {newValue: number}) => {
+            this.gameConfig.guessTimeout = data.newValue;
+            this.emitter.emit('game-settings-guessTimeout', {guessTimeout: this.gameConfig.guessTimeout})
+        })
     }
 
     onDisconnect() {
