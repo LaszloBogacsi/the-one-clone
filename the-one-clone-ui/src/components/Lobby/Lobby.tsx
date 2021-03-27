@@ -1,5 +1,5 @@
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import React, {ReactElement, useCallback} from "react";
+import React, {ReactComponentElement, ReactElement, ReactNode, useCallback} from "react";
 import {Player} from "../../domain/Player";
 import {faCheck, faTimes, faUser} from "@fortawesome/free-solid-svg-icons";
 import styles from './styles.module.css'
@@ -10,7 +10,7 @@ interface LobbyProps {
     players: Player[];
     me?: Player;
     onReady: () => void
-    children: ReactElement | null;
+    children: ReactNode;
     hasJoined: boolean;
     gameSettings: {maxRound: number, hintTimeout: number, guessTimeout: number}
     onGameSettingChange: ({key, value}: {key: string, value: number}) => void

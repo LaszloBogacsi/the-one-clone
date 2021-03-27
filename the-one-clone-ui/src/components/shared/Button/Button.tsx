@@ -1,8 +1,8 @@
-import React, {ReactElement} from "react";
+import React, {ReactElement, ReactNode} from "react";
 import styles from './styles.module.css'
 interface ButtonProps {
     onClick: (e: any) => void
-    children: ReactElement | string
+    children: ReactNode[] | string
     disabled?: boolean
 }
 

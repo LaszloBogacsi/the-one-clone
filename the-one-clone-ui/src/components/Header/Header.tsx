@@ -21,7 +21,7 @@ export default () => {
     const colors = useMemo(() => generateRandomColors(headerTitle.split("")), [headerTitle])
     return (
         <div className={styles.title}>
-            {headerTitle.split("").map((c, index) => c === " " ? " " : <span style={{color: colors[index]}}>{c}</span>)}
+            {headerTitle.split("").map((c, index) => c === " " ? " " : <span key={index} style={{color: colors[index]}}>{c}</span>)}
         </div>
     )
 }

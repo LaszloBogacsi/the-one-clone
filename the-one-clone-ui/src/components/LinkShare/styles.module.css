@@ -1,0 +1,54 @@
+.linkShare {
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy {
+    margin-left: 1rem;
+}
+
+.copied {
+    margin-left: 1rem;
+    font-size: 1.4rem;
+}
+
+.description {
+    color: #676767;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.layerTop {
+    padding: 0.25rem 1rem;
+    text-transform: uppercase;
+    background-color: white;
+    border: solid 1px white;
+    box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+    font-size: 1.25rem;
+    font-family: cafeteriabold;
+    transform: skew(2deg, 1deg);
+}
+
+.layerTop canvas {
+
+    display: none;
+}
+
+.layerMiddle {
+    padding: 4px;
+    background-color: var(--backgroundLight);
+    box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+    transform: skew(-1deg, -1deg);
+
+}
+
+.layerBottom {
+    width: fit-content;
+    padding: 4px;
+    background-color: var(--backgroundDark);
+    box-shadow: 2px 2px 8px 1px rgba(0, 0, 0, 0.3);
+    transform: skew(2deg, -2deg);
+
+}

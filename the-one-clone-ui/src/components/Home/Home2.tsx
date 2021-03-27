@@ -41,6 +41,7 @@ import {
 import DedupeHintItems from "../shared/DedupeHintItems/DedupeHintItems";
 import useMockData from "./useMockData";
 import useRandomColors from "./useRandomColors";
+import LinkShare from "../LinkShare/LinkShare";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -52,11 +53,14 @@ export interface ScoreDescription {
 }
 
 export function Home2() {
-    let query = useQuery();
+    const query = useQuery();
     const minPlayersNumber = 3;
 
     const [socket, setSocket] = useState<Socket>();
-    const [roomId, setRoomId] = useState("09zzt1lym3");
+    const initialRoomId = Math.random().toString(36).replace(/[^\w]+/g, '').substr(0, 10)
+
+    // const [roomId, setRoomId] = useState("09zzt1lym3");
+    const [roomId, setRoomId] = useState(initialRoomId);
     const [me, setMe] = useState<Player>();
 
     // INPUTS
@@ -81,6 +85,14 @@ export function Home2() {
     }, dispatchGameAction] = useReducer(gameStateReducer, initialGameState)
     const [players, dispatchPlayerAction] = useReducer(playersReducer, [] as Player[])
     const [countdown, dispatchCountdownAction] = useReducer(countdownReducer, hintTimeout)
+
+    useEffect(() => {
+        console.log(query.get("room-id"))
+
+        if (query.get("room-id") !== null) {
+            setRoomId(query.get("room-id")!)
+        }
+    }, [])
 
     useEffect(() => {
         const toPlayer = (player: any): Player => {
@@ -337,7 +349,7 @@ export function Home2() {
     // TODO: todos here
     /*
         refactor announcements to have one boolean switch (as only one can be on at a time)
-
+        use unique roomid for each game
         last implementations: player limits (min 3 players, max 7 players)
      */
 
@@ -356,12 +368,16 @@ export function Home2() {
             <div className="lobby">
                 {mockSettings.mockLobby.useMock ?
                     <Lobby {...mockLobbyParams } {...{hasJoined: query.get("room-id") !== null}}>
+                        { !query.get("room-id") && <LinkShare roomId={roomId}/> }
                         {mockResults && mockResults.length > 0 ?
                             <GameResults results={makeResultsWithDescription(mockResults)}/> : null}
                     </Lobby> :
                     <Lobby players={players} me={me} onReady={onReady} hasJoined={query.get("room-id") !== null} gameSettings={{maxRound, hintTimeout, guessTimeout}} onGameSettingChange={onChangeGameSettings}>
+                        {!query.get("room-id") && <LinkShare roomId={roomId}/>}
                         {results && results.length > 0 ?
-                            <GameResults results={makeResultsWithDescription(results)}/> : null}
+                            <GameResults results={makeResultsWithDescription(results)}/>
+                            : null
+                        }
                     </Lobby>
                 }
             </div>

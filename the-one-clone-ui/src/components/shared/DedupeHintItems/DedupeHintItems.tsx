@@ -22,7 +22,7 @@ export default (props: DedupeHintItemProps) => {
             <h3>Hints</h3>
             <div className={styles.hintItems}>
                 {hints.map((hint, index) =>
-                    <div className={styles.hintItemContainer}>
+                    <div key={index} className={styles.hintItemContainer}>
                         <div className={`${styles.hintItem} ${hint.duplicate ? styles.duplicate : ""} ${players.find(player => hint.player === player.id)?.color || ""}`} key={index}>
                             {hint.hint}
                         </div>
