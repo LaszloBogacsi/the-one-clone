@@ -1,4 +1,4 @@
-import React, {ChangeEvent, useState} from "react";
+import React, {ChangeEvent, useEffect, useState} from "react";
 import styles from "./styles.module.css";
 
 interface GameSettingsProps {
@@ -30,6 +30,13 @@ export default (props: GameSettingsProps) => {
         }
         onGameSettingChange({key: e.target.name, value: +e.target.value})
     }
+
+    useEffect(() => {
+        setMaxRoundValue(maxRound);
+        setHintTimeoutValue(hintTimeout);
+        setGuessTimeoutValue(guessTimeout)
+    }, [maxRound, hintTimeout, guessTimeout])
+
     return (
         <div className={styles.wrapper}>
             <div className={styles.inset}>
