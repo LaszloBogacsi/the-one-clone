@@ -56,7 +56,7 @@ export const mockGameStatusProps = {
     currentRound: 2,
     maxRounds: 5,
     currentTurn: 5,
-    maxTurns: 13,
+    maxTurns: 11,
     points: 4
 }
 

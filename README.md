@@ -78,3 +78,9 @@ It's game over when there are no more rounds to play, or all but one player left
 One can leave and rejoin the game any time.
 
 ```
+
+<img alt="lobby" src="./docs/Lobby.png" height="200" width="100"/>
+<img alt="role" src="./docs/RoleAnnouncement.png" height="200" width="100"/>
+<img alt="hinting" src="./docs/Hinting.png" height="200" width="100"/>
+<img alt="guessing" src="./docs/Guessing.png" height="200" width="100"/>
+<img alt="turnresult" src="./docs/turnResult.png" height="200" width="100"/>
