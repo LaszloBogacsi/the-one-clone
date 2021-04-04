@@ -3,26 +3,33 @@
 This project is a multiplayer game based on The Only One board game.
 
 ## `Technologies used`
+
 ```text
 NodeJs
 React
 Typescript
 Websockets
 ```
+
 ## `Development Setup`
+
 `API`
+
 ```shell
 cd ./the-one-clone-api
 npm i
 npm start
 ```
+
 `API TEST` _mocha with chai_
+
 ```shell
 cd ./the-one-clone-api
 npm test
 ```
 
 `UI`
+
 ```shell
 cd ./the-one-clone-ui
 npm i
@@ -30,6 +37,7 @@ npm start
 ```
 
 `UI TEST` _Jest_
+
 ```shell
 cd ./the-one-clone-ui
 npm test
@@ -41,6 +49,7 @@ The api start on the PORT `3000` the UI configured to run on PORT `3001`
 Locally the app is accessible through: http://localhost:3001
 
 ## `How to play`
+
 ```text
 3-10 players
 
@@ -79,8 +88,10 @@ One can leave and rejoin the game any time.
 
 ```
 
-<img alt="lobby" src="./docs/Lobby.png" height="200" width="100"/>
-<img alt="role" src="./docs/RoleAnnouncement.png" height="200" width="100"/>
-<img alt="hinting" src="./docs/Hinting.png" height="200" width="100"/>
-<img alt="guessing" src="./docs/Guessing.png" height="200" width="100"/>
-<img alt="turnresult" src="./docs/turnResult.png" height="200" width="100"/>
+<p>
+    <img alt="lobby" src="./docs/Lobby.png" width="100"/>
+    <img alt="role" src="./docs/RoleAnnouncement.png" width="100"/>
+    <img alt="hinting" src="./docs/Hinting.png" width="100"/>
+    <img alt="guessing" src="./docs/Guessing.png" width="100"/>
+    <img alt="turnresult" src="./docs/turnResult.png" width="100"/>
+</p>
