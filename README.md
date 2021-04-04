@@ -88,13 +88,10 @@ One can leave and rejoin the game any time.
 
 ```
 
-<p style="
-    display: grid;
-    grid-auto-flow: column;
-">
-    <img alt="lobby" src="./docs/Lobby.png" width="100"/>
-    <img alt="role" src="./docs/RoleAnnouncement.png" width="100"/>
-    <img alt="hinting" src="./docs/Hinting.png" width="100"/>
-    <img alt="guessing" src="./docs/Guessing.png" width="100"/>
-    <img alt="turnresult" src="./docs/turnResult.png" width="100"/>
+<p>
+    <img alt="lobby" src="./docs/Lobby.png" width="20%"/>
+    <img alt="role" src="./docs/RoleAnnouncement.png" width="20%"/>
+    <img alt="hinting" src="./docs/Hinting.png" width="20%"/>
+    <img alt="guessing" src="./docs/Guessing.png" width="20%"/>
+    <img alt="turnresult" src="./docs/turnResult.png" width="20%"/>
 </p>
