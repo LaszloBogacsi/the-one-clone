@@ -9,6 +9,7 @@ NodeJs
 React
 Typescript
 Websockets
+Yarn
 ```
 
 ## `Development Setup`
@@ -17,30 +18,30 @@ Websockets
 
 ```shell
 cd ./the-one-clone-api
-npm i
-npm start
+yarn install
+yarn start
 ```
 
 `API TEST` _mocha with chai_
 
 ```shell
 cd ./the-one-clone-api
-npm test
+yarn test
 ```
 
 `UI`
 
 ```shell
 cd ./the-one-clone-ui
-npm i
-npm start
+yarn install
+yarn start
 ```
 
 `UI TEST` _Jest_
 
 ```shell
 cd ./the-one-clone-ui
-npm test
+yarn test
 ```
 
 The UI has a mock-mode where all individual components can be toggled on/off
