@@ -88,7 +88,10 @@ One can leave and rejoin the game any time.
 
 ```
 
-<p vertical-align="top">
+<p style="
+    display: grid;
+    grid-auto-flow: column;
+">
     <img alt="lobby" src="./docs/Lobby.png" width="100"/>
     <img alt="role" src="./docs/RoleAnnouncement.png" width="100"/>
     <img alt="hinting" src="./docs/Hinting.png" width="100"/>
