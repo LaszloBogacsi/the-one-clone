@@ -25,7 +25,7 @@ export default (props: LinkShareProps) => {
     const linkText = `${useHref()}?room-id=${roomId}`;
     const [copied, setCopied] = useState(false)
     const onCopy = async () => {
-        await navigator.clipboard.writeText(linkText)
+        window.isSecureContext && navigator.clipboard ? await navigator.clipboard.writeText(linkText) : console.log(linkText); // TODO: better fallback
         setCopied(true)
     }
     useEffect(() => {
