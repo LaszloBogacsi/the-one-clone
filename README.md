@@ -88,7 +88,7 @@ One can leave and rejoin the game any time.
 
 ```
 
-<p>
+<p vertical-align="top">
     <img alt="lobby" src="./docs/Lobby.png" width="100"/>
     <img alt="role" src="./docs/RoleAnnouncement.png" width="100"/>
     <img alt="hinting" src="./docs/Hinting.png" width="100"/>
