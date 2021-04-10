@@ -8,9 +8,10 @@ import {Socket} from "socket.io";
 import {WordRepository} from "./Room2";
 
 var debug = require('debug')('the-one-clone-api:server');
-var http = require('http');
+var https = require('https');
 var socketIO = require('socket.io')
 const {Room2} = require("./Room2");
+const fs = require('fs')
 
 /**
  * Get port from environment and store in Express.
@@ -19,11 +20,16 @@ const {Room2} = require("./Room2");
 var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
+const options = {
+    key: fs.readFileSync('../cert.key'),
+    cert: fs.readFileSync('../cert.crt')
+};
+
 /**
- * Create HTTP server.
+ * Create HTTPS server.
  */
 
-var server = http.createServer(app);
+var server = https.createServer(options, app);
 const io = socketIO(server, {
     cors: {
         origin: '*',
@@ -34,7 +40,6 @@ const io = socketIO(server, {
     TODO
     refactor to reducer pattern
 */
-const fs = require('fs')
 
 const sockio = io.of("/")
 function readWords() {
