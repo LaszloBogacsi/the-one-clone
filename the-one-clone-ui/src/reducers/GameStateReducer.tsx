@@ -39,6 +39,10 @@ export function gameStateReducer(state: GameState, action: GameStateAction): Gam
         case "resetGameState":
             return {
                 ...initialGameState,
+                maxRound: state.maxRound,
+                maxTurn: state.maxTurn,
+                hintTimeout: state.hintTimeout,
+                guessTimeout: state.guessTimeout,
                 results: state.results
             }
         case "setDeduplication":
