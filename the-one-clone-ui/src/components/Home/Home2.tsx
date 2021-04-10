@@ -282,7 +282,7 @@ export function Home2() {
     }, [players])
 
     // @ts-ignore
-    const connectWebsocket = (action: string, playerName: string) => setSocket(io(`ws://${window.location.hostname}:3000`, {
+    const connectWebsocket = (action: string, playerName: string) => setSocket(io(`wss://${window.location.hostname}:3000`, {
         forceNew: false,
         query: {roomId, playerName, action}
     }));
