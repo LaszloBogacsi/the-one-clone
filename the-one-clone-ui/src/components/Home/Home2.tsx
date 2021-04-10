@@ -129,7 +129,7 @@ export function Home2() {
         };
         const lobbyStateHandler = (data: { inLobby: boolean }) => {
             console.log(data)
-            dispatchGameAction({type: 'resetGameState', payload: {}});
+            dispatchGameAction({type: 'resetGameState', payload: {}}); // <=== TODO(This overwrites the initial gamestate) should be "reset" from backend
             dispatchGameAction({type: 'setInLobby', payload: data.inLobby});
         }
         const gameOverAnnouncementHandler = (data: { gameOver: boolean }) => {
@@ -292,9 +292,9 @@ export function Home2() {
     const onReady = () => socket!.emit('on-ready', {ready: !me?.isReady})
     const onHint = (hint: string) => socket!.emit('on-player-hint-submit', {hint})
 
-    const onGuess = (event: any, guess: string, skip = false) => socket!.emit('on-player-guess-submit', {guess, skip})
+    const onGuess = (guess: string, skip = false) => socket!.emit('on-player-guess-submit', {guess, skip})
 
-    const onSkip = (event: any) => onGuess(event, "", true)
+    const onSkip = () => onGuess("", true)
 
     const scoreDescription = (score: number): ScoreDescription => {
         const scoreDescriptions = [
@@ -332,8 +332,6 @@ export function Home2() {
     // TODO: todos here
     /*
         dont dedupe when only one hint is there
-        round of max round not updating ???
-        turn of maxturn not updating
         admin leaves game, other gets thrown to the lobby, orig admin goes back to room with link => can not read turns of undefined
         after dedupe during guessing hints not visible
         refactor announcements to have one boolean switch (as only one can be on at a time)

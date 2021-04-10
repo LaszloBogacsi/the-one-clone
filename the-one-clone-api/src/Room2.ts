@@ -29,7 +29,6 @@ export class Room2 {
     private action: RoomAction
     private socket: Socket
     private store: any
-    // private gameLoopEvents: Map<GameEventType, GameEvent>;
     private readonly emitter: Emitter;
     private wordRepository: WordRepository;
     private readonly gameConfig: GameConfig;
@@ -102,24 +101,7 @@ export class Room2 {
 
     isReady() {
         this.socket.on('on-ready', this._onReadyHandler.bind(this))
-        this.socket.on('on-player-hint-submit', (data: { hint: string }) => {
-            const {gameState} = this.store;
-            const {turns, currentTurn} = gameState.rounds[gameState.currentRound];
-            const {hints} = turns[currentTurn];
-            hints.push({
-                hint: data.hint,
-                player: this.store.clients.find((c: Player) => c.id === this.socket.id)!.id,
-                duplicate: false
-            })
-            const hintersSoFar = hints.map((hint: Hint) => hint.player);
-            const allHintersHinted = this.store.clients.length === 3 ? hintersSoFar.length === 4 : this.store.clients.filter((client: Player) => client.role !== PlayerRole.GUESSER).every((client: Player) => hintersSoFar.includes(client.id))
-            console.info(`[INFO] Submitting hint of client ${this.socket.id}`);
-            if (allHintersHinted) {
-                this._clearAllTimeouts()
-                this.store.gameLoopEvents.get("hintCountDown")!.cancel()
-                // this.transition();
-            }
-        })
+        this.socket.on('on-player-hint-submit', this._onPlayerHintSubmit.bind(this))
         this.socket.on('on-player-guess-submit', (data: { guess: string, skip: boolean }) => {
             const {gameState}: { gameState: GameState } = this.store;
             const {rounds, currentRound} = gameState;
@@ -132,7 +114,6 @@ export class Room2 {
             this._clearAllTimeouts()
             this.store.gameLoopEvents.get("guessCountDown")!.cancel()
         })
-
         this.socket.on("toggle-hint-as-duplicate", (data: { hintId: number }) => {
             const {gameState}: { gameState: GameState } = this.store;
             const {rounds, currentRound} = gameState;
@@ -141,7 +122,6 @@ export class Room2 {
             turn.hints[data.hintId].duplicate = !turn.hints[data.hintId].duplicate;
             this.emitter.emit('turn-hints', {hints: turn.hints, currentRound, currentTurn: round.currentTurn})
         })
-
         this.socket.on("dedupe-submit", () => this.store.gameLoopEvents.get("dedupeCountDown")!.cancel())
         this.socket.on("set-maxRound", (data: {newValue: number}) => {
             this.gameConfig.maxRounds = data.newValue;
@@ -155,6 +135,24 @@ export class Room2 {
             this.gameConfig.guessTimeout = data.newValue;
             this.emitter.emit('game-settings-guessTimeout', {guessTimeout: this.gameConfig.guessTimeout})
         })
+    }
+
+    _onPlayerHintSubmit (data: { hint: string }) {
+            const {gameState} = this.store;
+            const {turns, currentTurn} = gameState.rounds[gameState.currentRound];
+            const {hints} = turns[currentTurn];
+            hints.push({
+                hint: data.hint,
+                player: this.store.clients.find((c: Player) => c.id === this.socket.id)!.id,
+                duplicate: false
+            })
+            const hintersSoFar = hints.map((hint: Hint) => hint.player);
+            const allHintersHinted = this.store.clients.length <= 3 ? hintersSoFar.length % 2 === 0 : this.store.clients.filter((client: Player) => client.role !== PlayerRole.GUESSER).every((client: Player) => hintersSoFar.includes(client.id))
+            console.info(`[INFO] Submitting hint of client ${this.socket.id}`);
+            if (allHintersHinted) {
+                this._clearAllTimeouts()
+                this.store.gameLoopEvents.get("hintCountDown")!.cancel()
+            }
     }
 
     onDisconnect() {

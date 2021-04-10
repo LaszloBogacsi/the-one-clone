@@ -68,8 +68,8 @@ export const mockHinterProps = {
 }
 
 export const mockGuesserProps = {
-    onGuess: (e: any, hint: string) => console.log(hint),
-    onSkip: (e: any) => console.log("SKIPPING"),
+    onGuess: (hint: string) => console.log(hint),
+    onSkip: () => console.log("SKIPPING"),
     reveal: true,
     hints: mockHints,
     me: mockPlayers.find(p => p.isMe)!,
