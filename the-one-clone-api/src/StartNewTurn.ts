@@ -27,17 +27,17 @@ export class StartNewTurn implements GameEvent {
         return function (event: string) {
             const interval = 3000;
             const timings: Map<string, number> = new Map([
+                ["newRound", 0],
+                ["announceRoles", interval],
+                ["announceNewTurn", interval * 2],
+                ["startNewTurn", interval * 3]
+            ])
+            const timings2: Map<string, number> = new Map([
+                ["roundEnd", 0],
                 ["newRound", interval],
                 ["announceRoles", interval * 2],
                 ["announceNewTurn", interval * 3],
                 ["startNewTurn", interval * 4]
-            ])
-            const timings2: Map<string, number> = new Map([
-                ["roundEnd", interval],
-                ["newRound", interval * 2],
-                ["announceRoles", interval * 3],
-                ["announceNewTurn", interval * 4],
-                ["startNewTurn", interval * 5]
             ])
             return currentRound > -1 ? timings.get(event) || interval : timings2.get(event) || interval;
         }
