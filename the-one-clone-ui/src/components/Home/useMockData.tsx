@@ -16,7 +16,7 @@ const mockSettingsInitial: { [key: string]: { useMock: boolean, visible: boolean
     mockGameOverAnnouncement: {useMock: true, visible: false},
     mockGameStatus: {useMock: true, visible: true},
     mockTimer: {useMock: true, visible: true},
-    mockHints: {useMock: true, visible: true},
+    mockHints: {useMock: true, visible: false},
     mockDeduplicationAnnouncement: {useMock: true, visible: false},
     mockGuessStartAnnouncement: {useMock: true, visible: false},
 }

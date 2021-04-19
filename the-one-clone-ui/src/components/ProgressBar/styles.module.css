@@ -1,0 +1,38 @@
+.progressBar {
+    background-color: var(--backgroundArea);
+    height: 16px;
+    display: grid;
+    grid-auto-flow: column;
+    align-items: center;
+}
+
+.hintProgress {
+    background-color: var(--gameAccentBlue);
+    height: 3px;
+    transition: width 1s linear;
+
+}
+.dedupeProgress {
+    background-color: var(--gameAccentOrange);
+    height: 3px;
+    transition: width 1s linear;
+}
+
+
+.guessProgress {
+    background-color: var(--gameAccentGreen);
+    height: 3px;
+    transition: width 1s linear;
+}
+
+.segmentWrapper {
+    height: 8px;
+    border-right: 1px solid #606060;
+    display: flex;
+    align-items: center;
+}
+
+.segmentWrapper:last-child {
+    border-right: transparent;
+}
+

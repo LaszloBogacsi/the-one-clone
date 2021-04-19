@@ -14,17 +14,31 @@ export default (props: HinterProps) => {
     const {secretWord, onHint, me, isMinPlayerMode} = props;
 
     return (
-        <div className={styles.hinter}>
-            <p className={styles.secretWord}>{secretWord}</p>
-            <Hint onHint={onHint} color={me.color}/>
+        <div className={styles.hinterContainer}>
+            <div className={styles.hinter}>
+                <SecretWord word={secretWord}/>
+                <Hint onHint={onHint} color={me.color}/>
+            </div>
             {isMinPlayerMode &&
             <div className={styles.hinter}>
                 <div className={styles.description}>In 3 player mode, Hinters can help with 2 hints</div>
                 <Hint onHint={onHint} color={me.color}/>
-            </div>
-            }
+            </div>}
         </div>
+    )
+}
 
+interface SecretWordProps {
+    word: string
+}
+
+const SecretWord = (props: SecretWordProps) => {
+    const {word} = props;
+    return (
+        <div className={styles.secretWordContainer}>
+            <div className={styles.descriptionSW}>Secret Word:</div>
+            <div className={styles.secretWord}>{word}</div>
+        </div>
     )
 }
 

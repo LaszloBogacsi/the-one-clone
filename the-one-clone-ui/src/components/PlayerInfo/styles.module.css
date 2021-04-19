@@ -31,3 +31,10 @@ padding: 2rem;
 .ready {
     color: var(--gameAccentGreen);
 }
+
+.description {
+    color: #676767;
+    font-size: 2rem;
+    text-align: left;
+    text-transform: uppercase;
+}

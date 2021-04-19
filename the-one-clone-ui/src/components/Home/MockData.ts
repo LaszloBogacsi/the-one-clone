@@ -60,11 +60,23 @@ export const mockGameStatusProps = {
     points: 4
 }
 
+export const mockProgressBarProps = {
+    currentValues: [
+        3, 0, 0
+    ],
+    segments: [
+        {maxValue: 10, className:  "hintProgress"},
+        {maxValue: 10, className:  "dedupeProgress"},
+        {maxValue: 10, className:  "guessProgress"},
+    ]
+
+}
+
 export const mockHinterProps = {
     secretWord: "Big Secret Word",
     onHint: (hint: string) => console.log(hint),
     me: mockPlayers.find(p => p.isMe)!,
-    isMinPlayerMode: true
+    isMinPlayerMode: false
 }
 
 export const mockGuesserProps = {

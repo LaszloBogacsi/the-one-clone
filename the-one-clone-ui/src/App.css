@@ -39,9 +39,7 @@
   }
 }
 
-
 .init {
-  /*min-height: 100vh;*/
   align-items: center;
   display: grid;
   grid-template-columns: 1fr;
@@ -49,14 +47,15 @@
 }
 
 .game {
-  /*min-height: 100vh;*/
   align-items: center;
   display: grid;
+  grid-gap: 1rem;
   grid-template-columns: minmax(100px, .4fr) 1fr;
-  grid-template-rows: 4rem 3rem minmax(350px, auto) auto;
+  grid-template-rows: 4rem 3rem 1rem minmax(350px, auto) auto;
   grid-template-areas:
     "header header"
-    "timer gamestatus"
+    "statusbar statusbar"
+    "progressbar progressbar"
     "playarea playarea"
     "playerinfo playerinfo";
 }
@@ -67,6 +66,10 @@
 
 .playerInfo {
   grid-area: playerinfo;
+  background-color: var(--backgroundArea);
+  border-radius: 1rem;
+  align-self: start;
+  height: 100%;
 }
 
 .playArea {
@@ -74,25 +77,30 @@
   height: 100%;
 }
 
-.gameStatus {
-  grid-area: gamestatus;
+
+.statusBar {
+  grid-area: statusbar;
+  display: flex;
+  background-color: var(--backgroundArea);
+  border-radius: 1rem;
+  align-items: center;
+  height: 100%;
 }
 
-.timer {
-  grid-area: timer;
+.progressBar {
+  grid-area: progressbar;
 }
 
 @media only screen and (min-width: 600px) {
   .game {
     display: grid;
     grid-template-columns: auto 3fr;
-    grid-template-rows: 4rem 3rem minmax(400px, auto) auto;
+    grid-template-rows: 4rem 3rem 1rem minmax(400px, auto);
     grid-template-areas:
     "header header"
-    "timer gamestatus"
-    "playerinfo playarea"
+    "statusbar statusbar"
+    "progressbar progressbar"
     "playerinfo playarea";
-
   }
 
 }
@@ -106,11 +114,11 @@
 
     display: grid;
     grid-template-columns: auto 3fr;
-    grid-template-rows: 4rem 3rem minmax(400px, auto) auto;
+    grid-template-rows: 4rem 3rem 1rem minmax(400px, auto);
     grid-template-areas:
     "header header"
-    "timer gamestatus"
-    "playerinfo playarea"
+    "statusbar statusbar"
+    "progressbar progressbar"
     "playerinfo playarea";
   }
 }

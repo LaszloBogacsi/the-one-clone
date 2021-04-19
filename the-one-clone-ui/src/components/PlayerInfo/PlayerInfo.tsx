@@ -16,6 +16,7 @@ export default (props: PlayerInfoProps) => {
     const hasHinted = (player: Player) => turn!.hints.some(hint => hint.player === player.id && !player.isGuessing)
     return (
         <div className={styles.playerInfo}>
+            <div className={styles.description}>Players</div>
             <ul>
                 {players.map((player: Player, index: number) =>
                     <li className={`${styles.playerListItem} ${player.color}`}

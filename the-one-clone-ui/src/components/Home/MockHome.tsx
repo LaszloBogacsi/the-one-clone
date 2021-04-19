@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import {useLocation} from "react-router-dom";
 import {Turn} from "../../domain/Turn";
 import {Round} from "../../domain/Round";
@@ -25,7 +25,7 @@ import {
     mockHints,
     mockLobbyParams,
     mockMe,
-    mockPlayers,
+    mockPlayers, mockProgressBarProps,
     mockResults,
     mockRounds,
     mockTurn
@@ -34,6 +34,7 @@ import DedupeHintItems from "../shared/DedupeHintItems/DedupeHintItems";
 import useMockData from "./useMockData";
 import LinkShare from "../LinkShare/LinkShare";
 import styles from './styles.module.css'
+import {ProgressBar} from "../ProgressBar/ProgressBar";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -73,6 +74,28 @@ export function MockHome() {
         return results.map(result => ({...scoreDescription(result), result}))
     }
 
+    const [progress, setProgress] = useState<number[]>([0, 0, 0])
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            // const values = [...mockProgressBarProps.currentValues];
+            const updateProgress = (values: number[]) => values.map((v, index, arr) => {
+                if (index === 0 && v < mockProgressBarProps.segments[0].maxValue) {
+                    return v + 1;
+                } else if (index > 0 && arr[index - 1] === mockProgressBarProps.segments[index - 1].maxValue) {
+                    return Math.min(v + 1, mockProgressBarProps.segments[index].maxValue);
+                } else {
+                    return v;
+                }
+            })
+            if (progress.every((p, index) => p === mockProgressBarProps.segments[index].maxValue)) {
+                setProgress(progress.map(i => 0))
+            } else {
+                setProgress(updateProgress)
+            }
+        }, 1000);
+        return () => clearTimeout(timeout)
+    }, [progress])
     return (
         <div className={`home ${styles.home}`}>
             <MockToggler mockSettings={mockSettings} setMockSettings={setMockSettings}/>
@@ -155,15 +178,15 @@ export function MockHome() {
                     </div>
                     }
                 </div>
-                <div className="gameStatus">
+                <div className="statusBar">
+                    {mockSettings.mockTimer.visible && <Timer timeout={13} critical={10}/>}
                     {mockSettings.mockGameStatus.visible && <GameStatus{...mockGameStatusProps}/>}
                 </div>
-                <div className="timer">
-                    {mockSettings.mockTimer.visible && <Timer timeout={13} critical={10}/>}
+                <div className="progressBar">
+                    <ProgressBar {...mockProgressBarProps} currentValues={progress}/>
                 </div>
             </div>
             }
         </div>
-
     )
 }

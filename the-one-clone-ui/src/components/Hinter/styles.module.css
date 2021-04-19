@@ -1,13 +1,29 @@
+.hinterContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .hinter {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1rem;
+    margin-bottom: 1rem;
 }
 
 .secretWord {
-    font-size: 2rem;
+    font-size: 3rem;
     font-family: cafeteriabold;
+    margin: 1rem 0 2rem 0;
+}
+
+.secretWordContainer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: #d0c39f5c;
+    margin-bottom: 1rem;
+    border-radius: 1rem;
 }
 
 .hintInput input{
@@ -38,4 +54,11 @@
     color: #676767;
     font-size: 1.2rem;
     margin-bottom: 1rem;
+}
+
+.descriptionSW {
+    color: #676767;
+    font-size: 2rem;
+    text-transform: uppercase;
+    padding-top: 1rem;
 }

@@ -20,6 +20,9 @@ export default (props: DedupeHintItemProps) => {
     return (
         <div className={styles.hintItemsWrapper}>
             <h3>Hints</h3>
+            <div className={styles.description}>Mark Hints as duplicates and exclude them with the <FontAwesomeIcon className={styles.ready} icon={faTimes}/> or include them with the <FontAwesomeIcon className={styles.ready} icon={faCheck}/> button.<br/>
+            The hint marked as duplicate will not show up for the guesser. <br/>
+                When done submit your choices</div>
             <div className={styles.hintItems}>
                 {hints.map((hint, index) =>
                     <div key={index} className={styles.hintItemContainer}>

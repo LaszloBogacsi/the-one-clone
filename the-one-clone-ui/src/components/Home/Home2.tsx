@@ -29,6 +29,7 @@ import DedupeHintItems from "../shared/DedupeHintItems/DedupeHintItems";
 import useRandomColors from "./useRandomColors";
 import LinkShare from "../LinkShare/LinkShare";
 import {MockHome} from "./MockHome";
+import {ProgressBar} from "../ProgressBar/ProgressBar";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -315,7 +316,10 @@ export function Home2() {
         } : defaultDescription
     };
 
-    const makeResultsWithDescription = (results: number[]) => results.map(result => ({...scoreDescription(result), result}))
+    const makeResultsWithDescription = (results: number[]) => results.map(result => ({
+        ...scoreDescription(result),
+        result
+    }))
 
 
     const onToggleAsDuplicate = (id: number) => {
@@ -337,137 +341,135 @@ export function Home2() {
         refactor announcements to have one boolean switch (as only one can be on at a time)
         last implementations: player limits (min 3 players, max 7 players)
      */
-    const useMock = true;
+
     return (
-
-            useMock ? <MockHome/> :
-                <div className={`home ${styles.home}`}>
-
-                    <div className='header'>
-                        <Header/>
-                    </div>
-                    {!socket &&
-                    <div className="init">
-                        <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom} roomId={query.get("room-id")}/>
-                    </div>
+        <div className={`home ${styles.home}`}>
+            <div className='header'>
+                <Header/>
+            </div>
+            {!socket &&
+            <div className="init">
+                <StartGame onCreate={onCreateRoom} onJoin={onJoinRoom} roomId={query.get("room-id")}/>
+            </div>
+            }
+            {(socket && inLobby) &&
+            <div className="lobby">
+                <Lobby players={players} me={me} onReady={onReady} hasJoined={query.get("room-id") !== null}
+                       gameSettings={{maxRound, hintTimeout, guessTimeout}}
+                       onGameSettingChange={onChangeGameSettings}>
+                    {!query.get("room-id") && <LinkShare roomId={roomId}/>}
+                    {results && results.length > 0 &&
+                    <GameResults results={makeResultsWithDescription(results)}/>
                     }
-                    {(socket && inLobby) &&
-                    <div className="lobby">
-                        <Lobby players={players} me={me} onReady={onReady} hasJoined={query.get("room-id") !== null}
-                               gameSettings={{maxRound, hintTimeout, guessTimeout}}
-                               onGameSettingChange={onChangeGameSettings}>
-                            {!query.get("room-id") && <LinkShare roomId={roomId}/>}
-                            {results && results.length > 0 &&
-                            <GameResults results={makeResultsWithDescription(results)}/>
-                            }
-                        </Lobby>
+                </Lobby>
+            </div>
+            }
+            {(socket && !inLobby) &&
+            <div className="game">
+                <div className="playerInfo">
+                    <PlayerInfo players={players}
+                                turn={rounds.length > 0 ? rounds[currentRound].turns[rounds[currentRound].currentTurn] : undefined}/>
+                </div>
+                <div className="playArea">
+                    {(!inLobby && rounds.length > 0) &&
+                    <div className={styles.playArea}>
+                        {(me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 && !rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication && !rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal) &&
+                        <Hinter
+                            secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
+                            onHint={onHint}
+                            me={me!}
+                            isMinPlayerMode={players.length === minPlayersNumber}/>
+                        }
+                        {(me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal) &&
+                        <DedupeHintItems
+                            hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
+                            markAsDuplicate={onToggleAsDuplicate}
+                            onSubmit={onDedupeSubmit}
+                            controlsActive={rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication && me!.isAdmin}
+                            players={players}/>
+                        }
+
+                        {(me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0) &&
+                        <Guesser
+                            reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
+                            hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
+                            onGuess={onGuess}
+                            onSkip={onSkip}
+                            me={me!}
+                            players={players}/>
+                        }
+                        {(rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].result && !rounds[currentRound].showRoundResults) &&
+                        <Overlay>
+                            <TurnResult
+                                turn={rounds[currentRound].turns[rounds[currentRound].currentTurn]}
+                                player={players.find(player => player.isGuessing)!}/>
+                        </Overlay>
+                        }
+                        {rounds[currentRound].showRoundResults &&
+                        <Overlay>
+                            <RoundResult points={rounds[currentRound].points}
+                                         scoreDescription={scoreDescription(rounds[currentRound].points)}/>
+                        </Overlay>
+                        }
+                        {showRoles &&
+                        <Overlay>
+                            <RolesAnnouncement me={me} role={players.find(p => p.isGuessing)}
+                                               messageText={"guessing"}/>
+                        </Overlay>
+                        }
+                        {announceRound &&
+                        <Overlay>
+                            <Announcement type={"Round"} announcement={`${currentRound + 1}`}/>
+                        </Overlay>
+                        }
+                        {announceTurn &&
+                        <Overlay>
+                            <Announcement type={"Turn"}
+                                          announcement={`${rounds[currentRound].currentTurn + 1}`}/>
+                        </Overlay>
+                        }
+                        {announceGameOver &&
+                        <Overlay>
+                            <Announcement type={"Game"} announcement={"Over"}/>
+                        </Overlay>
+                        }
+                        {announceDeduplication &&
+                        <Overlay>
+                            <RolesAnnouncement
+                                me={me}
+                                role={players.find(p => p.isAdmin)}
+                                messageText={"removing duplicate hints"}/>
+
+                        </Overlay>
+                        }
+                        {announceGuessStart &&
+                        <Overlay>
+                            <RolesAnnouncement me={me} role={players.find(p => p.isGuessing)}
+                                               messageText={"guessing now"}/>
+                        </Overlay>
+                        }
                     </div>
-                    }
-                    {(socket && !inLobby) &&
-                    <div className="game">
-                        <div className="playerInfo">
-                            <PlayerInfo players={players}
-                                        turn={rounds.length > 0 ? rounds[currentRound].turns[rounds[currentRound].currentTurn] : undefined}/>
-                        </div>
-                        <div className="playArea">
-                            {(!inLobby && rounds.length > 0) &&
-                            <div className={styles.playArea}>
-                                {(me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 && !rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication && !rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal) &&
-                                <Hinter
-                                    secretWord={rounds[currentRound].turns[rounds[currentRound].currentTurn].secretWord}
-                                    onHint={onHint}
-                                    me={me!}
-                                    isMinPlayerMode={players.length === minPlayersNumber}/>
-                                }
-                                {(me && !me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal) &&
-                                <DedupeHintItems
-                                    hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
-                                    markAsDuplicate={onToggleAsDuplicate}
-                                    onSubmit={onDedupeSubmit}
-                                    controlsActive={rounds[currentRound].turns[rounds[currentRound].currentTurn].deduplication && me!.isAdmin}
-                                    players={players}/>
-                                }
 
-                                {(me && me.isGuessing && rounds.length && rounds[currentRound].turns.length > 0) &&
-                                <Guesser
-                                    reveal={rounds[currentRound].turns[rounds[currentRound].currentTurn].reveal}
-                                    hints={rounds[currentRound].turns[rounds[currentRound].currentTurn].hints}
-                                    onGuess={onGuess}
-                                    onSkip={onSkip}
-                                    me={me!}
-                                    players={players}/>
-                                }
-                                {(rounds.length && rounds[currentRound].turns.length > 0 && rounds[currentRound].turns[rounds[currentRound].currentTurn].result && !rounds[currentRound].showRoundResults) &&
-                                <Overlay>
-                                    <TurnResult
-                                        turn={rounds[currentRound].turns[rounds[currentRound].currentTurn]}
-                                        player={players.find(player => player.isGuessing)!}/>
-                                </Overlay>
-                                }
-                                {rounds[currentRound].showRoundResults &&
-                                <Overlay>
-                                    <RoundResult points={rounds[currentRound].points}
-                                                 scoreDescription={scoreDescription(rounds[currentRound].points)}/>
-                                </Overlay>
-                                }
-                                {showRoles &&
-                                <Overlay>
-                                    <RolesAnnouncement me={me} role={players.find(p => p.isGuessing)}
-                                                       messageText={"guessing"}/>
-                                </Overlay>
-                                }
-                                {announceRound &&
-                                <Overlay>
-                                    <Announcement type={"Round"} announcement={`${currentRound + 1}`}/>
-                                </Overlay>
-                                }
-                                {announceTurn &&
-                                <Overlay>
-                                    <Announcement type={"Turn"}
-                                                  announcement={`${rounds[currentRound].currentTurn + 1}`}/>
-                                </Overlay>
-                                }
-                                {announceGameOver &&
-                                <Overlay>
-                                    <Announcement type={"Game"} announcement={"Over"}/>
-                                </Overlay>
-                                }
-                                {announceDeduplication &&
-                                <Overlay>
-                                    <RolesAnnouncement
-                                        me={me}
-                                        role={players.find(p => p.isAdmin)}
-                                        messageText={"removing duplicate hints"}/>
-
-                                </Overlay>
-                                }
-                                {announceGuessStart &&
-                                <Overlay>
-                                    <RolesAnnouncement me={me} role={players.find(p => p.isGuessing)}
-                                                       messageText={"guessing now"}/>
-                                </Overlay>
-                                }
-                            </div>
-
-                            }
-                        </div>
-                        <div className="gameStatus">
-                            {(!inLobby && rounds.length > 0) &&
-                            <GameStatus
-                                currentRound={currentRound}
-                                currentTurn={rounds[currentRound].currentTurn}
-                                maxRounds={maxRound}
-                                maxTurns={maxTurn}
-                                points={rounds[currentRound].points}
-                            />
-                            }
-                        </div>
-                        <div className="timer">
-                            <Timer timeout={countdown} critical={10}/>
-                        </div>
-                    </div>
                     }
                 </div>
+                <div className="statusBar">
+                    <Timer timeout={countdown} critical={10}/>
+                    {(!inLobby && rounds.length > 0) &&
+                    <GameStatus
+                        currentRound={currentRound}
+                        currentTurn={rounds[currentRound].currentTurn}
+                        maxRounds={maxRound}
+                        maxTurns={maxTurn}
+                        points={rounds[currentRound].points}
+                    />
+                    }
+                </div>
+                {/*<div className="progressBar">*/}
+                {/*    <ProgressBar/>*/}
+                {/*</div>*/}
+            </div>
+            }
+        </div>
 
     )
 }

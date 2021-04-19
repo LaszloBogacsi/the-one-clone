@@ -40,8 +40,9 @@ export default (props: GuesserProps) => {
     return (
         reveal ?
             <div className={styles.guesser}>
-
-                <HintItems hints={hints} players={players}/>
+                <div className={styles.topContainer}>
+                    <HintItems hints={hints} players={players}/>
+                </div>
                 <form onSubmit={onSubmit} className={styles.guesser}>
                     <div className={styles.guessInput}>
                         <input value={guess}

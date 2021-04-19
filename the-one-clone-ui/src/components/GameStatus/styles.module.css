@@ -1,7 +1,7 @@
 .gameStatus {
     display: grid;
     grid-template: none / 1fr 1fr 1fr;
-
+    flex: 3;
 }
 
 .current {

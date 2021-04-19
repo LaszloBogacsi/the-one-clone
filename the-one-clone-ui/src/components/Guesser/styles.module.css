@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1rem;
+    margin-bottom: 1rem;
 }
 
 .guessInput input{
@@ -30,6 +30,14 @@
 
 .guessing {
     font-weight: bolder;
+}
+
+.topContainer {
+ align-self: stretch;
+    background-color: var(--backgroundArea);
+    margin-bottom: 1rem;
+    border-radius: 1rem;
+
 }
 
 .description {
