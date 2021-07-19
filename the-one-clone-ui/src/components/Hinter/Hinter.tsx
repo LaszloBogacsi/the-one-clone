@@ -72,7 +72,7 @@ const Hint = (props: HintProps) => {
                        autoComplete={"off"}
                        onChange={onInputChange}
                        type="search"
-                       placeholder={"Hint Me"}
+                       placeholder={"Hint Here"}
                        size={20}
                        className={color}
                        disabled={submitted}
