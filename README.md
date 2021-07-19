@@ -43,6 +43,9 @@ yarn start
 cd ./the-one-clone-ui
 yarn test
 ```
+`HTTPS`
+
+Generate localhost crt and key for local https development
 
 The UI has a mock-mode where all individual components can be toggled on/off
 
