@@ -1,7 +1,7 @@
 import React from "react";
 import styles from './styles.module.css'
 
-interface Segment {
+export interface Segment {
     maxValue: number;
     className: string
 }

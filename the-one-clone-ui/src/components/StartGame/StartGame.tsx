@@ -51,7 +51,7 @@ export function StartGame(props: StartGameProps) {
             </form>
             <div className={styles.wrapper}>
                 <h3>Rules/information</h3>
-                <p>This is a clone of the Only One game</p>
+                <p>This is a clone of the Just One game</p>
                 <p>Players: 3-7</p>
             </div>
         </div>

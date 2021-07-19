@@ -1,4 +1,4 @@
-import React, {useEffect, useReducer, useState} from "react";
+import React, {useEffect, useMemo, useReducer, useState} from "react";
 import io, {Socket} from "socket.io-client";
 import {useLocation} from "react-router-dom";
 import {Player} from "../../domain/Player";
@@ -28,8 +28,7 @@ import Header from "../Header/Header";
 import DedupeHintItems from "../shared/DedupeHintItems/DedupeHintItems";
 import useRandomColors from "./useRandomColors";
 import LinkShare from "../LinkShare/LinkShare";
-import {MockHome} from "./MockHome";
-import {ProgressBar} from "../ProgressBar/ProgressBar";
+import {ProgressBar, Segment} from "../ProgressBar/ProgressBar";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -38,6 +37,18 @@ function useQuery() {
 export interface ScoreDescription {
     title: string;
     description: string
+}
+
+export type CountdownType = "hint" | "dedupe" | "guess";
+
+export interface CountdownTypeState {
+    type: CountdownType;
+    countdown: number
+}
+
+export interface CountdownState {
+    countdown: number;
+    typeStates: CountdownTypeState[]
 }
 
 export function Home2() {
@@ -52,6 +63,7 @@ export function Home2() {
 
     // INPUTS
     const randomColors = useRandomColors();
+
 
     const [{
         rounds,
@@ -70,8 +82,10 @@ export function Home2() {
         announceGuessStart
     }, dispatchGameAction] = useReducer(gameStateReducer, initialGameState)
     const [players, dispatchPlayerAction] = useReducer(playersReducer, [] as Player[])
-    const [countdown, dispatchCountdownAction] = useReducer(countdownReducer, hintTimeout)
-
+    const initialCountdown: CountdownState = {countdown: hintTimeout, typeStates: []}
+    const [{countdown, typeStates}, dispatchCountdownAction] = useReducer(countdownReducer, initialCountdown)
+    console.log(countdown)
+    console.log(typeStates)
     useEffect(() => {
         console.log(query.get("room-id"))
 
@@ -155,9 +169,10 @@ export function Home2() {
             dispatchGameAction({type: 'announceTurn', payload: {announceTurn: true}});
         }
         const startTurnHandler = (data: { message: string }) => {
+            dispatchCountdownAction({type: 'resetCountdown'});
             dispatchGameAction({type: 'announceTurn', payload: {announceTurn: false}});
         }
-        const countdownHandler = (data: { countdown: number }) => {
+        const countdownHandler = (data: { countdown: number, type: CountdownType }) => {
             dispatchCountdownAction({type: 'updateCountdown', payload: {...data}});
         }
         const endHintHandler = (data: { message: string }) => {
@@ -333,6 +348,16 @@ export function Home2() {
         socket!.emit(`set-${key}`, {newValue: value})
     }
 
+    const segments = useMemo(() => [
+        {maxValue: hintTimeout / 1000, className: "hintProgress"},
+        {maxValue: 20, className: "dedupeProgress"},
+        {maxValue: guessTimeout / 1000, className: "guessProgress"},
+    ], [hintTimeout, guessTimeout]);
+
+    const initialProgress = Array(Object.keys(segments).length).fill(0);
+    const [progress, setProgress] = useState<number[]>(initialProgress);
+
+
     // TODO: todos here
     /*
         dont dedupe when only one hint is there
@@ -341,6 +366,24 @@ export function Home2() {
         refactor announcements to have one boolean switch (as only one can be on at a time)
         last implementations: player limits (min 3 players, max 7 players)
      */
+    useEffect(() => {
+        const fromCountdown = (typeStates: CountdownTypeState[], segments: Segment[] ): number[] => {
+            const initial = Array(Object.keys(segments).length).fill(0);
+            if (!typeStates.length) {
+                return initial;
+            }
+
+            return typeStates.reduce((acc, ts, i, arr) => {
+                if (i > 0 && acc[i - 1] < segments[i-1].maxValue) {
+                    acc[i-1] = segments[i-1].maxValue;
+                }
+                acc[i] = segments[i].maxValue - ts.countdown >= 0 ?  segments[i].maxValue - ts.countdown : segments[i].maxValue;
+                return acc
+            }, initial);
+        }
+        setProgress(fromCountdown(typeStates, segments))
+    }, [countdown])
+
 
     return (
         <div className={`home ${styles.home}`}>
@@ -464,9 +507,9 @@ export function Home2() {
                     />
                     }
                 </div>
-                {/*<div className="progressBar">*/}
-                {/*    <ProgressBar/>*/}
-                {/*</div>*/}
+                <div className="progressBar">
+                    <ProgressBar currentValues={progress} segments={segments}/>
+                </div>
             </div>
             }
         </div>

@@ -78,7 +78,6 @@ export function MockHome() {
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            // const values = [...mockProgressBarProps.currentValues];
             const updateProgress = (values: number[]) => values.map((v, index, arr) => {
                 if (index === 0 && v < mockProgressBarProps.segments[0].maxValue) {
                     return v + 1;

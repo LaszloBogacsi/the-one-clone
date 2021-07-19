@@ -277,14 +277,15 @@ export class Room2 {
     private initLoopEvents() {
         this.store.gameLoopEvents = new Map<GameEventType, GameEvent>([
             ['startNewTurn', new StartNewTurn(this.roomId, this.emitter, this.wordRepository)],
-            ['hintCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.hintTimeout / 1000, this.transition)],
+            ['hintCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.hintTimeout / 1000, this.transition, "hint")],
             ['hintToDedupe', new HintToDedupe(this.emitter)],
-            ['dedupeCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.dedupeTimeout / 1000, this.transition)],
+            ['dedupeCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.dedupeTimeout / 1000, this.transition, "dedupe")],
             ['dedupeToGuess', new DedupeToGuess(this.emitter)],
-            ['guessCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.guessTimeout / 1000, this.transition)],
+            ['guessCountDown', new Countdown(this.emitter, this.store.gameState.gameConfig.guessTimeout / 1000, this.transition, "guess")],
             ['guessToNewTurn', new GuessToNewTurn(this.emitter)]])
     }
 }
+export type CountdownType = "hint" |"guess" |"dedupe" ;
 
 module.exports = {
     Room2, Turn, Round, GameConfig
